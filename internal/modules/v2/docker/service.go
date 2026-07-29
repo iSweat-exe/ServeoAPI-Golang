@@ -7,7 +7,6 @@ import (
 
 	"serveoapi/internal/core/config"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
@@ -19,8 +18,13 @@ type DockerService struct {
 	Config    *config.Config
 }
 
-func (s *DockerService) ListContainers(ctx context.Context) ([]ContainerInfo, error) {
-	containers, err := s.DockerCli.ContainerList(ctx, container.ListOptions{All: true})
+func (s *DockerService) ListContainers(
+	ctx context.Context,
+) ([]ContainerInfo, error) {
+	containers, err := s.DockerCli.ContainerList(
+		ctx,
+		container.ListOptions{All: true},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +49,18 @@ func (s *DockerService) ListContainers(ctx context.Context) ([]ContainerInfo, er
 	return resp, nil
 }
 
-func (s *DockerService) InspectContainer(ctx context.Context, id string) (types.ContainerJSON, error) {
+func (s *DockerService) InspectContainer(
+	ctx context.Context,
+	id string,
+) (container.InspectResponse, error) {
 	return s.DockerCli.ContainerInspect(ctx, id)
 }
 
-func (s *DockerService) ActionContainer(ctx context.Context, id, action string) error {
+func (s *DockerService) ActionContainer(
+	ctx context.Context,
+	id string,
+	action string,
+) error {
 	switch action {
 	case "start":
 		return s.DockerCli.ContainerStart(ctx, id, container.StartOptions{})
@@ -62,14 +73,25 @@ func (s *DockerService) ActionContainer(ctx context.Context, id, action string) 
 	}
 }
 
-func (s *DockerService) DeleteContainer(ctx context.Context, id string, force bool) error {
-	return s.DockerCli.ContainerRemove(ctx, id, container.RemoveOptions{
-		Force:         force,
-		RemoveVolumes: false,
-	})
+func (s *DockerService) DeleteContainer(
+	ctx context.Context,
+	id string,
+	force bool,
+) error {
+	return s.DockerCli.ContainerRemove(
+		ctx,
+		id,
+		container.RemoveOptions{
+			Force:         force,
+			RemoveVolumes: false,
+		},
+	)
 }
 
-func (s *DockerService) CreateContainer(ctx context.Context, req CreateContainerRequest) (ContainerInfo, error) {
+func (s *DockerService) CreateContainer(
+	ctx context.Context,
+	req CreateContainerRequest,
+) (ContainerInfo, error) {
 	allowedRoot := s.Config.AllowedMountRoot
 	var hostConfig container.HostConfig
 	hostConfig.Binds = []string{}
@@ -103,7 +125,9 @@ func (s *DockerService) CreateContainer(ctx context.Context, req CreateContainer
 	hostConfig.PortBindings = portBindings
 
 	if req.RestartPolicy != "" {
-		hostConfig.RestartPolicy = container.RestartPolicy{Name: container.RestartPolicyMode(req.RestartPolicy)}
+		hostConfig.RestartPolicy = container.RestartPolicy{
+			Name: container.RestartPolicyMode(req.RestartPolicy),
+		}
 	}
 
 	containerConfig := &container.Config{
@@ -112,7 +136,14 @@ func (s *DockerService) CreateContainer(ctx context.Context, req CreateContainer
 		ExposedPorts: exposedPorts,
 	}
 
-	resp, err := s.DockerCli.ContainerCreate(ctx, containerConfig, &hostConfig, nil, nil, req.Name)
+	resp, err := s.DockerCli.ContainerCreate(
+		ctx,
+		containerConfig,
+		&hostConfig,
+		nil,
+		nil,
+		req.Name,
+	)
 	if err != nil {
 		return ContainerInfo{}, err
 	}
@@ -135,7 +166,11 @@ func (s *DockerService) CreateContainer(ctx context.Context, req CreateContainer
 	}, nil
 }
 
-func (s *DockerService) UpdateContainer(ctx context.Context, id string, req UpdateContainerRequest) (ContainerInfo, error) {
+func (s *DockerService) UpdateContainer(
+	ctx context.Context,
+	id string,
+	req UpdateContainerRequest,
+) (ContainerInfo, error) {
 	oldContainer, err := s.DockerCli.ContainerInspect(ctx, id)
 	if err != nil {
 		return ContainerInfo{}, err
@@ -162,7 +197,14 @@ func (s *DockerService) UpdateContainer(ctx context.Context, id string, req Upda
 		EndpointsConfig: oldContainer.NetworkSettings.Networks,
 	}
 
-	resp, err := s.DockerCli.ContainerCreate(ctx, newConfig, newHostConfig, importNetworkConfig, nil, newName)
+	resp, err := s.DockerCli.ContainerCreate(
+		ctx,
+		newConfig,
+		newHostConfig,
+		importNetworkConfig,
+		nil,
+		newName,
+	)
 	if err != nil {
 		return ContainerInfo{}, err
 	}

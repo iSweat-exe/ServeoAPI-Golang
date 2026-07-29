@@ -82,7 +82,10 @@ func (h *Handler) ActionContainer(w http.ResponseWriter, r *http.Request) {
 // @Param        force   query     bool    false "Force remove"
 // @Success      204
 // @Router       /v2/docker/containers/{id} [delete]
-func (h *Handler) DeleteContainer(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteContainer(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id := r.PathValue("id")
 	force := r.URL.Query().Get("force") == "true"
 
@@ -115,7 +118,10 @@ type CreateContainerRequest struct {
 // @Success      201  {object}  ContainerInfo
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/containers/create [post]
-func (h *Handler) CreateContainer(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateContainer(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var req CreateContainerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid body")
@@ -154,7 +160,10 @@ type UpdateContainerRequest struct {
 // @Success      200  {object}  ContainerInfo
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/containers/{id}/update [put]
-func (h *Handler) UpdateContainer(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateContainer(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id := r.PathValue("id")
 	var req UpdateContainerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

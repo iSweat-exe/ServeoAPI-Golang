@@ -6,8 +6,12 @@ import (
 	"net/http"
 )
 
-// SendJSON sends a JSON response with the given status code and payload.
-func SendJSON(w http.ResponseWriter, status int, payload interface{}) {
+// SendJSON sends a JSON response with the given status code and payload
+func SendJSON(
+	w http.ResponseWriter,
+	status int,
+	payload interface{},
+) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if payload != nil {

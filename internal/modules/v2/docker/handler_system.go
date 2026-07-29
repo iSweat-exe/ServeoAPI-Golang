@@ -48,7 +48,10 @@ func (h *Handler) GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      204
 // @Router       /v2/docker/system/prune [post]
-func (h *Handler) PruneSystem(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PruneSystem(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	cli := h.Service.DockerCli
 
 	// Le nettoyage complet (images, conteneurs, volumes, réseaux) nécessite des appels séparés dans le SDK
@@ -70,7 +73,10 @@ func (h *Handler) PruneSystem(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      200  {string}  string "Event Stream"
 // @Router       /v2/docker/system/events [get]
-func (h *Handler) StreamSystemEvents(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) StreamSystemEvents(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	cli := h.Service.DockerCli
 
 	msgs, errs := cli.Events(r.Context(), events.ListOptions{})

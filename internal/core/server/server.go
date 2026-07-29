@@ -11,7 +11,11 @@ import (
 	"serveoapi/internal/core/config"
 )
 
-func Start(ctx context.Context, cfg *config.Config, handler http.Handler) {
+func Start(
+	ctx context.Context,
+	cfg *config.Config,
+	handler http.Handler,
+) {
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
 		Handler:      handler,
@@ -20,14 +24,14 @@ func Start(ctx context.Context, cfg *config.Config, handler http.Handler) {
 	}
 
 	go func() {
-		log.Printf("🚀 ServeoAPI %s is running on port %s [%s]", config.AppVersion, cfg.Port, cfg.Env)
+		log.Printf("ServeoAPI %s is running on port %s [%s]", config.AppVersion, cfg.Port, cfg.Env)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("❌ Server failure: %v", err)
 		}
 	}()
 
 	<-ctx.Done()
-	log.Printf("⚠️ Context cancelled, starting graceful shutdown...")
+	log.Printf("Context cancelled, starting graceful shutdown...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -36,5 +40,5 @@ func Start(ctx context.Context, cfg *config.Config, handler http.Handler) {
 		log.Fatalf("❌ Forced shutdown error: %v", err)
 	}
 
-	log.Println("✅ Server stopped gracefully")
+	log.Println("Server stopped gracefully")
 }

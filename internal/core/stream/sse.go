@@ -14,7 +14,10 @@ func SetupSSEHeaders(w http.ResponseWriter) {
 }
 
 // SendSSEEvent envoie un évènement formaté SSE au client et flush le buffer
-func SendSSEEvent(w http.ResponseWriter, data string) {
+func SendSSEEvent(
+	w http.ResponseWriter,
+	data string,
+) {
 	fmt.Fprintf(w, "data: %s\n\n", data)
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()

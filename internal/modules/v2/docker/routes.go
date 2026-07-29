@@ -8,7 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB, cfg *config.Config, dockerCli *client.Client) {
+func RegisterRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	db *gorm.DB,
+	cfg *config.Config,
+	dockerCli *client.Client,
+) {
 	service := &DockerService{
 		DockerCli: dockerCli,
 		Config:    cfg,

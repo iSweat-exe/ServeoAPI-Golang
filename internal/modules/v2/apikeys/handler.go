@@ -43,7 +43,10 @@ func hashToken(token string) string {
 // @Param        request body CreateApiKeyRequest true "Key details"
 // @Success      201  {object}  CreateApiKeyResponse
 // @Router       /v2/apikeys/create [post]
-func (h *Handler) CreateApiKey(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateApiKey(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	userID, ok := contextkeys.GetUserID(r.Context())
 	if !ok {
 		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
@@ -100,7 +103,10 @@ func (h *Handler) CreateApiKey(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      200  {array}   ApiKeyResponse
 // @Router       /v2/apikeys/ [get]
-func (h *Handler) ListApiKeys(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListApiKeys(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	userID, ok := common.GetUserIDOrUnauthorized(w, r)
 	if !ok {
 		return
@@ -134,7 +140,10 @@ func (h *Handler) ListApiKeys(w http.ResponseWriter, r *http.Request) {
 // @Param        id path int true "API Key ID"
 // @Success      200  {object}  map[string]string
 // @Router       /v2/apikeys/{id} [delete]
-func (h *Handler) RevokeApiKey(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RevokeApiKey(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	userID, ok := common.GetUserIDOrUnauthorized(w, r)
 	if !ok {
 		return

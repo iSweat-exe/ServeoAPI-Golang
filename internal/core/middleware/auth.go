@@ -7,7 +7,10 @@ import (
 
 func Auth(expectedToken string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(
+			w http.ResponseWriter,
+			r *http.Request,
+		) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				http.Error(w, "Missing Authorization header", http.StatusUnauthorized)

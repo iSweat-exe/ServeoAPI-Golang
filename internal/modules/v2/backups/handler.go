@@ -41,7 +41,10 @@ func (h *Handler) getBackupsDir() string {
 // @Success      201      {object}  BackupInfo
 // @Failure      404,500  {string}  string
 // @Router       /v2/backups/{server} [post]
-func (h *Handler) CreateBackup(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateBackup(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	server := r.PathValue("server")
 	if strings.Contains(server, "/") || strings.Contains(server, "\\") || server == ".." {
 		response.SendError(w, http.StatusBadRequest, "Invalid server name")
@@ -83,7 +86,10 @@ func (h *Handler) CreateBackup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Handler) getServerNameOrError(w http.ResponseWriter, r *http.Request) (string, bool) {
+func (h *Handler) getServerNameOrError(
+	w http.ResponseWriter,
+	r *http.Request,
+) (string, bool) {
 	server := r.PathValue("server")
 	if strings.Contains(server, "/") || strings.Contains(server, "\\") || server == ".." {
 		response.SendError(w, http.StatusBadRequest, "Invalid server name")
@@ -101,7 +107,10 @@ func (h *Handler) getServerNameOrError(w http.ResponseWriter, r *http.Request) (
 // @Param        server   path      string  true  "Server name (folder name)"
 // @Success      200      {array}   BackupInfo
 // @Router       /v2/backups/{server} [get]
-func (h *Handler) ListBackups(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListBackups(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	server, ok := h.getServerNameOrError(w, r)
 	if !ok {
 		return
@@ -152,7 +161,10 @@ type RestoreRequest struct {
 // @Success      204
 // @Failure      400,404,500 {string} string
 // @Router       /v2/backups/{server}/restore [post]
-func (h *Handler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RestoreBackup(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	server, ok := h.getServerNameOrError(w, r)
 	if !ok {
 		return

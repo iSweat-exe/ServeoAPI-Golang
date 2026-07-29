@@ -7,7 +7,11 @@ import (
 	"serveoapi/internal/core/middleware"
 )
 
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, cfg *config.Config) {
+func RegisterRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	cfg *config.Config,
+) {
 	h := &Handler{Config: cfg}
 
 	registerRoute := func(methodPath, perm string, handler http.HandlerFunc) {

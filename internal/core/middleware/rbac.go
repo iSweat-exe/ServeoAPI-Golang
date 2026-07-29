@@ -10,7 +10,10 @@ import (
 // RequirePermission checks if the authenticated user has the required permission
 // or if they have the root permission "*".
 func RequirePermission(requiredPerm string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(
+		w http.ResponseWriter,
+		r *http.Request,
+	) {
 		permissionsObj := r.Context().Value(contextkeys.UserPermissionsKey)
 		if permissionsObj == nil {
 			http.Error(w, "Access Denied: No permissions found", http.StatusForbidden)

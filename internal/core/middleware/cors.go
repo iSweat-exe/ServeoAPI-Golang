@@ -8,7 +8,10 @@ import (
 
 // CORS est un middleware qui gère les requêtes Cross-Origin Resource Sharing
 func CORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(
+		w http.ResponseWriter,
+		r *http.Request,
+	) {
 		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 		if allowedOrigins == "" {
 			allowedOrigins = "http://localhost:3000"

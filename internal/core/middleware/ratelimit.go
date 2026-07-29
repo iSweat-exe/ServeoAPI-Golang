@@ -54,7 +54,10 @@ func getVisitor(ip string) *rate.Limiter {
 
 // RateLimit is a middleware that applies rate limiting per IP address.
 func RateLimit(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(
+		w http.ResponseWriter,
+		r *http.Request,
+	) {
 		// Extraction de l'IP (sans le port)
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {

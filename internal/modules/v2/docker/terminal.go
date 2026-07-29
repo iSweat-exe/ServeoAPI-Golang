@@ -57,7 +57,11 @@ func hasContainerWritePermission(tokenString string) bool {
 }
 
 // probeShell vérifie si /bin/bash est exécutable dans le conteneur
-func probeShell(ctx context.Context, cli *client.Client, containerID string) string {
+func probeShell(
+	ctx context.Context,
+	cli *client.Client,
+	containerID string,
+) string {
 	execConfig := container.ExecOptions{ // Remarque : types.ExecConfig est obsolète, on utilise container.ExecOptions
 		AttachStdout: false,
 		AttachStderr: false,
@@ -105,7 +109,10 @@ func probeShell(ctx context.Context, cli *client.Client, containerID string) str
 // @Success      101  {string}  string  "Switching Protocols to WebSocket"
 // @Failure      400,401,403,404,500 {string} string
 // @Router       /v2/docker/containers/{id}/exec [get]
-func (h *Handler) TerminalHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) TerminalHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	containerID := r.PathValue("id")
 	if containerID == "" {
 		http.Error(w, "Container ID is required", http.StatusBadRequest)
@@ -199,7 +206,14 @@ func (h *Handler) TerminalHandler(w http.ResponseWriter, r *http.Request) {
 	// débloquant de force l'autre goroutine et nettoyant toutes les ressources.
 }
 
-func handleTerminalInput(ctx context.Context, ws *websocket.Conn, cli *client.Client, execID string, conn io.Writer, errChan chan<- error) {
+func handleTerminalInput(
+	ctx context.Context,
+	ws *websocket.Conn,
+	cli *client.Client,
+	execID string,
+	conn io.Writer,
+	errChan chan<- error,
+) {
 	for {
 		msgType, payload, err := ws.ReadMessage()
 		if err != nil {
@@ -227,7 +241,11 @@ func handleTerminalInput(ctx context.Context, ws *websocket.Conn, cli *client.Cl
 	}
 }
 
-func handleTerminalOutput(ws *websocket.Conn, reader io.Reader, errChan chan<- error) {
+func handleTerminalOutput(
+	ws *websocket.Conn,
+	reader io.Reader,
+	errChan chan<- error,
+) {
 	buf := make([]byte, 8192)
 	for {
 		n, err := reader.Read(buf)

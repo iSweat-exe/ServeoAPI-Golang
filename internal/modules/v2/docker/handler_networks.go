@@ -17,7 +17,10 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {array}   NetworkInfo
 // @Router       /v2/docker/networks/ [get]
-func (h *Handler) GetNetworks(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetNetworks(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	cli := h.Service.DockerCli
 
 	networks, err := cli.NetworkList(context.Background(), network.ListOptions{})
@@ -54,7 +57,10 @@ func (h *Handler) GetNetworks(w http.ResponseWriter, r *http.Request) {
 // @Param        id    path      string  true  "Network ID"
 // @Success      204
 // @Router       /v2/docker/networks/{id} [delete]
-func (h *Handler) DeleteNetwork(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteNetwork(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id := r.PathValue("id")
 	cli := h.Service.DockerCli
 
@@ -84,7 +90,10 @@ type CreateNetworkRequest struct {
 // @Success      201  {object}  NetworkInfo
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/networks/ [post]
-func (h *Handler) CreateNetwork(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateNetwork(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var req CreateNetworkRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid body")

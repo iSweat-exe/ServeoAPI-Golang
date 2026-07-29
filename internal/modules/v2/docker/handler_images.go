@@ -20,7 +20,10 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {array}   ImageInfo
 // @Router       /v2/docker/images/ [get]
-func (h *Handler) GetImages(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetImages(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	cli := h.Service.DockerCli
 
 	images, err := cli.ImageList(context.Background(), image.ListOptions{All: false})
@@ -61,7 +64,10 @@ func (h *Handler) GetImages(w http.ResponseWriter, r *http.Request) {
 // @Param        body body PullImageRequest true "Image to pull"
 // @Success      200  {string}  string "Event Stream"
 // @Router       /v2/docker/images/pull [post]
-func (h *Handler) PullImage(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PullImage(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var req PullImageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Image == "" {
 		response.SendError(w, http.StatusBadRequest, "Invalid payload or missing image name")
@@ -98,7 +104,10 @@ func (h *Handler) PullImage(w http.ResponseWriter, r *http.Request) {
 // @Param        force   query     bool    false "Force remove"
 // @Success      204
 // @Router       /v2/docker/images/{id} [delete]
-func (h *Handler) DeleteImage(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteImage(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id := r.PathValue("id")
 	force := r.URL.Query().Get("force") == "true"
 

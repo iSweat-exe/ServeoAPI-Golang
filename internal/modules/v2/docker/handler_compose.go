@@ -30,7 +30,10 @@ type DeployStackRequest struct {
 // @Success      201  {string}  string "Stack deployed successfully"
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/compose/deploy [post]
-func (h *Handler) DeployStack(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeployStack(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var req DeployStackRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid body")
@@ -59,7 +62,10 @@ func (h *Handler) DeployStack(w http.ResponseWriter, r *http.Request) {
 	h.executeDeploy(w, r, req)
 }
 
-func validateComposeVolumes(compose map[string]interface{}, allowedRoot string) error {
+func validateComposeVolumes(
+	compose map[string]interface{},
+	allowedRoot string,
+) error {
 	services, ok := compose["services"].(map[string]interface{})
 	if !ok {
 		return nil
@@ -85,7 +91,10 @@ func validateComposeVolumes(compose map[string]interface{}, allowedRoot string) 
 	return nil
 }
 
-func validateVolume(vol interface{}, srvName, allowedRoot string) error {
+func validateVolume(
+	vol interface{},
+	srvName, allowedRoot string,
+) error {
 	volStr := ""
 	switch v := vol.(type) {
 	case string:
@@ -115,7 +124,11 @@ func validateVolume(vol interface{}, srvName, allowedRoot string) error {
 }
 
 // executeDeploy continues the logic of DeployStack
-func (h *Handler) executeDeploy(w http.ResponseWriter, r *http.Request, req DeployStackRequest) {
+func (h *Handler) executeDeploy(
+	w http.ResponseWriter,
+	r *http.Request,
+	req DeployStackRequest,
+) {
 
 	// 2. Écrire le YAML dans un fichier temporaire
 	tmpDir := os.TempDir()

@@ -45,7 +45,10 @@ type LoginResponse struct {
 // @Success      200  {object}  LoginResponse
 // @Failure      401  {string}  string "Invalid credentials"
 // @Router       /v2/auth/login [post]
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Login(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid request body")
@@ -103,7 +106,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      204
 // @Router       /v2/auth/logout [post]
-func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Logout(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	// Extraire userID du contexte (injecté par le middleware JWT)
 	userID, ok := contextkeys.GetUserID(r.Context())
 	if !ok {
