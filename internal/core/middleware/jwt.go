@@ -12,18 +12,24 @@ import (
 func JWTAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-			return
+		tokenString := ""
+
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+				tokenString = strings.TrimSpace(parts[1])
+			} else {
+				// Fallback (ex: pour Swagger)
+				tokenString = strings.TrimSpace(authHeader)
+			}
+		} else {
+			// Fallback pour les IDEs et clients (comme Cursor/Antigravity) qui ne supportent pas les Headers HTTP
+			tokenString = r.URL.Query().Get("token")
 		}
 
-		tokenString := ""
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
-			tokenString = strings.TrimSpace(parts[1])
-		} else {
-			// Fallback (ex: pour Swagger)
-			tokenString = strings.TrimSpace(authHeader)
+		if tokenString == "" {
+			http.Error(w, "Missing Authorization header or token parameter", http.StatusUnauthorized)
+			return
 		}
 
 		userID, permissions, err := ValidateToken(tokenString)
