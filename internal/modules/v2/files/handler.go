@@ -15,48 +15,37 @@ import (
 )
 
 type Handler struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	Config    *config.Config
+	DockerCli *client.Client
 }
 
-var (
-	validServerRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-	dockerClient     *client.Client
-)
+var validServerRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-func init() {
-	// Initialize Docker client once for performance
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err == nil {
-		dockerClient = cli
-	}
-}
-
-// resolveSafeRoot verifies the server exists and returns an *os.Root for atomic safe path resolution
-// resolveSafeRoot verifies the server exists and returns an *os.Root for atomic safe path resolution
-func resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, bool) {
+// resolveSafeRoot vérifie que le serveur existe et retourne un *os.Root pour une résolution de chemin atomique et sécurisée
+func (h *Handler) resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, bool) {
 	serverName := r.PathValue("server")
 	if !validServerRegex.MatchString(serverName) {
 		response.SendError(w, http.StatusBadRequest, "Invalid server name format")
 		return nil, "", false
 	}
 
-	if dockerClient == nil {
+	if h.DockerCli == nil {
 		response.SendError(w, http.StatusInternalServerError, "Docker client unavailable")
 		return nil, "", false
 	}
 
-	// Validation: check if container actually exists
-	_, err := dockerClient.ContainerInspect(r.Context(), serverName)
+	// Validation : vérifier si le conteneur existe vraiment
+	_, err := h.DockerCli.ContainerInspect(r.Context(), serverName)
 	if err != nil {
 		response.SendError(w, http.StatusNotFound, "Server not found or inaccessible")
 		return nil, "", false
 	}
 
-	cfg := config.Load()
-	rootPath := filepath.Join(cfg.AllowedMountRoot, serverName)
+	rootPath := filepath.Join(h.Config.AllowedMountRoot, serverName)
 
-	// Use Go 1.24+ os.OpenRoot which guarantees atomic RESOLVE_BENEATH
-	// This entirely closes the TOCTOU race window for intermediate directories
+	// Utilisation de os.OpenRoot (Go 1.24+) qui garantit RESOLVE_BENEATH de façon atomique
+	// Cela ferme entièrement la fenêtre de vulnérabilité TOCTOU pour les répertoires intermédiaires
 	root, err := os.OpenRoot(rootPath)
 	if err != nil {
 		response.SendError(w, http.StatusForbidden, "Security violation: Cannot open root directory safely")
@@ -68,7 +57,7 @@ func resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, 
 		reqPath = "."
 	}
 
-	// Clean the requested path to remove redundant separators
+	// Nettoyer le chemin demandé pour supprimer les séparateurs redondants
 	reqPath = filepath.Clean(reqPath)
 
 	return root, reqPath, true
@@ -86,13 +75,13 @@ func resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, 
 // @Success      200  {array}   FileInfo
 // @Router       /v2/files/{server}/list [get]
 func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := resolveSafeRoot(w, r)
+	root, reqPath, ok := h.resolveSafeRoot(w, r)
 	if !ok {
 		return
 	}
 	defer root.Close()
 
-	// Safe read directly from the root
+	// Lecture sécurisée directement depuis la racine
 	f, err := root.Open(reqPath)
 	if err != nil {
 		response.SendError(w, http.StatusNotFound, "Directory not found or cannot be read")
@@ -108,7 +97,7 @@ func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 
 	var fileList []FileInfo
 	for _, info := range entries {
-		// Calculate the relative path from the reqPath
+		// Calculer le chemin relatif depuis reqPath
 		rel := filepath.Join(reqPath, info.Name())
 		if reqPath == "." || reqPath == "/" {
 			rel = info.Name()
@@ -136,13 +125,13 @@ func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative path to file"
 // @Router       /v2/files/{server}/read [get]
 func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := resolveSafeRoot(w, r)
+	root, reqPath, ok := h.resolveSafeRoot(w, r)
 	if !ok {
 		return
 	}
 	defer root.Close()
 
-	// Atomic open safe against symlink races
+	// Ouverture atomique protégée contre les attaques par liens symboliques (symlink races)
 	f, err := root.OpenFile(reqPath, os.O_RDONLY, 0)
 	if err != nil {
 		response.SendError(w, http.StatusNotFound, "File not found or cannot be read")
@@ -170,13 +159,13 @@ func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative path to file"
 // @Router       /v2/files/{server}/write [post]
 func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := resolveSafeRoot(w, r)
+	root, reqPath, ok := h.resolveSafeRoot(w, r)
 	if !ok {
 		return
 	}
 	defer root.Close()
 
-	// Atomic open safe against symlink races (O_TRUNC implies modification)
+	// Ouverture atomique protégée contre les attaques par liens symboliques (O_TRUNC implique une modification)
 	f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Cannot open file for writing: "+err.Error())
@@ -203,13 +192,13 @@ func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative destination directory path"
 // @Router       /v2/files/{server}/upload [post]
 func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := resolveSafeRoot(w, r)
+	root, reqPath, ok := h.resolveSafeRoot(w, r)
 	if !ok {
 		return
 	}
 	defer root.Close()
 
-	// Stream multipart directly without buffering into RAM/tmpfs
+	// Streaming multipart direct sans mise en mémoire tampon dans la RAM ou tmpfs
 	reader, err := r.MultipartReader()
 	if err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid multipart request")
@@ -231,7 +220,7 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	finalPath := filepath.Join(reqPath, cleanFileName)
 
-	// Atomic file creation within the secure root
+	// Création atomique de fichier au sein de la racine sécurisée
 	f, err := root.OpenFile(finalPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Cannot create file: "+err.Error())
@@ -239,7 +228,7 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	// True 1-pass zero-memory streaming to disk
+	// Véritable streaming vers le disque en une seule passe et sans consommation de mémoire
 	if _, err := io.Copy(f, part); err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Error saving file")
 		return
@@ -258,7 +247,7 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative path to file or directory"
 // @Router       /v2/files/{server}/delete [delete]
 func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := resolveSafeRoot(w, r)
+	root, reqPath, ok := h.resolveSafeRoot(w, r)
 	if !ok {
 		return
 	}
@@ -269,7 +258,7 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Atomic recursive removal safe against TOCTOU
+	// Suppression récursive atomique protégée contre les vulnérabilités TOCTOU
 	if err := root.RemoveAll(reqPath); err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Cannot delete file: "+err.Error())
 		return

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"serveoapi/internal/core/config"
 
 	"github.com/mark3labs/mcp-go/server"
 
@@ -15,30 +16,26 @@ var (
 	mcpHandler http.Handler
 )
 
-// InitServer initializes the MCP server and registers tools
-func InitServer() {
+// InitServer initialise le serveur MCP et enregistre les outils
+func InitServer(cfg *config.Config) {
 	mcpServer = server.NewMCPServer("ServeoAPI-MCP", "1.0.0")
 
-	// Register tools
-	registerTools()
+	// Enregistrer les outils
+	registerTools(cfg)
 
-	// Wrap in a Streamable HTTP Server
+	// Envelopper dans un serveur HTTP Streamable
 	mcpHandler = server.NewStreamableHTTPServer(mcpServer)
 }
 
-// GetHandler returns the HTTP handler for the MCP routes
+// GetHandler retourne le handler HTTP pour les routes MCP
 func GetHandler() http.Handler {
 	return mcpHandler
 }
 
-// hasPermission is a helper to check if the current request context has the required RBAC permission.
+// hasPermission vérifie si le contexte de la requête contient la permission RBAC requise.
 func hasPermission(ctx context.Context, requiredPerm string) error {
-	// Our middleware injects "permissions" into the request context (or "claims")
-	// Let's assume we can fetch the user ID or claims from the context.
-	// Since we are inside an MCP tool call, the HTTP request context is NOT directly available in the tool context by default in mcp-go unless we pass it.
-	// Wait, the MCP tools signature is func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error).
-	// If the StreamableHTTPServer passes the HTTP context to the tools, we can retrieve the claims.
-	// We'll extract claims from context.
+	// Le middleware injecte les permissions dans le contexte
+	// Nous extrayons les permissions du contexte.
 	permissionsObj := ctx.Value(contextkeys.UserPermissionsKey)
 	if permissionsObj == nil {
 		return errors.New("unauthorized: missing user permissions in context")

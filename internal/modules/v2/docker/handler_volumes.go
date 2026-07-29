@@ -17,8 +17,8 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {array}   VolumeInfo
 // @Router       /v2/docker/volumes/ [get]
-func GetVolumes(w http.ResponseWriter, r *http.Request) {
-	cli := GetClient()
+func (h *Handler) GetVolumes(w http.ResponseWriter, r *http.Request) {
+	cli := h.Service.DockerCli
 
 	volumes, err := cli.VolumeList(context.Background(), volume.ListOptions{})
 	if err != nil {
@@ -51,11 +51,11 @@ func GetVolumes(w http.ResponseWriter, r *http.Request) {
 // @Param        force query     bool    false "Force remove"
 // @Success      204
 // @Router       /v2/docker/volumes/{name} [delete]
-func DeleteVolume(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteVolume(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	force := r.URL.Query().Get("force") == "true"
 
-	cli := GetClient()
+	cli := h.Service.DockerCli
 
 	err := cli.VolumeRemove(context.Background(), name, force)
 	if err != nil {
@@ -75,7 +75,7 @@ type CreateVolumeRequest struct {
 // CreateVolume godoc
 // @Summary      Create a Docker Volume
 // @Description  Create a new Docker volume manually
-// @Tags         volumes
+// @Tags         docker-volumes
 // @Security     ApiKeyAuth
 // @Accept       json
 // @Produce      json
@@ -83,14 +83,14 @@ type CreateVolumeRequest struct {
 // @Success      201  {object}  VolumeInfo
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/volumes/ [post]
-func CreateVolume(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateVolume(w http.ResponseWriter, r *http.Request) {
 	var req CreateVolumeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
-	cli := GetClient()
+	cli := h.Service.DockerCli
 
 	if req.Driver == "" {
 		req.Driver = "local"

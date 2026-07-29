@@ -17,8 +17,8 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {array}   NetworkInfo
 // @Router       /v2/docker/networks/ [get]
-func GetNetworks(w http.ResponseWriter, r *http.Request) {
-	cli := GetClient()
+func (h *Handler) GetNetworks(w http.ResponseWriter, r *http.Request) {
+	cli := h.Service.DockerCli
 
 	networks, err := cli.NetworkList(context.Background(), network.ListOptions{})
 	if err != nil {
@@ -54,10 +54,9 @@ func GetNetworks(w http.ResponseWriter, r *http.Request) {
 // @Param        id    path      string  true  "Network ID"
 // @Success      204
 // @Router       /v2/docker/networks/{id} [delete]
-func DeleteNetwork(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-
-	cli := GetClient()
+	cli := h.Service.DockerCli
 
 	err := cli.NetworkRemove(context.Background(), id)
 	if err != nil {
@@ -77,7 +76,7 @@ type CreateNetworkRequest struct {
 // CreateNetwork godoc
 // @Summary      Create a Docker Network
 // @Description  Create a new Docker network manually
-// @Tags         networks
+// @Tags         docker-networks
 // @Security     ApiKeyAuth
 // @Accept       json
 // @Produce      json
@@ -85,14 +84,14 @@ type CreateNetworkRequest struct {
 // @Success      201  {object}  NetworkInfo
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/networks/ [post]
-func CreateNetwork(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateNetwork(w http.ResponseWriter, r *http.Request) {
 	var req CreateNetworkRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
-	cli := GetClient()
+	cli := h.Service.DockerCli
 
 	if req.Driver == "" {
 		req.Driver = "bridge"
@@ -109,10 +108,10 @@ func CreateNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch created network to return info
+	// Récupérer le réseau créé pour renvoyer les informations
 	net, err := cli.NetworkInspect(r.Context(), res.ID, network.InspectOptions{})
 	if err != nil {
-		// Just return ID if inspect fails
+		// Renvoyer juste l'ID si l'inspection échoue
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(NetworkInfo{

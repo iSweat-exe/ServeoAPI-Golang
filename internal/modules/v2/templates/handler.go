@@ -13,18 +13,18 @@ import (
 )
 
 type Handler struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	Config *config.Config
 }
 
-// ensureTemplatesDir checks if the folder exists, and if not, creates it and loads default templates.
-func ensureTemplatesDir() error {
-	cfg := config.Load()
-	if _, err := os.Stat(cfg.TemplatesPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(cfg.TemplatesPath, 0755); err != nil {
+// ensureTemplatesDir vérifie si le dossier existe, et sinon, le crée et charge les modèles par défaut.
+func (h *Handler) ensureTemplatesDir() error {
+	if _, err := os.Stat(h.Config.TemplatesPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(h.Config.TemplatesPath, 0755); err != nil {
 			return err
 		}
-		// Write some defaults (Minecraft, Rust, Python, etc.)
-		writeDefaultTemplates(cfg.TemplatesPath)
+		// Écrire quelques valeurs par défaut (Minecraft, Rust, Python, etc.)
+		writeDefaultTemplates(h.Config.TemplatesPath)
 	}
 	return nil
 }
@@ -39,13 +39,12 @@ func ensureTemplatesDir() error {
 // @Success      200  {array}   TemplateInfo
 // @Router       /v2/templates/ [get]
 func (h *Handler) GetTemplates(w http.ResponseWriter, r *http.Request) {
-	if err := ensureTemplatesDir(); err != nil {
+	if err := h.ensureTemplatesDir(); err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Failed to load templates directory")
 		return
 	}
 
-	cfg := config.Load()
-	files, err := os.ReadDir(cfg.TemplatesPath)
+	files, err := os.ReadDir(h.Config.TemplatesPath)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -54,13 +53,13 @@ func (h *Handler) GetTemplates(w http.ResponseWriter, r *http.Request) {
 	var templates []TemplateInfo
 	for _, f := range files {
 		if filepath.Ext(f.Name()) == ".json" {
-			data, err := os.ReadFile(filepath.Join(cfg.TemplatesPath, f.Name()))
+			data, err := os.ReadFile(filepath.Join(h.Config.TemplatesPath, f.Name()))
 			if err != nil {
 				continue
 			}
 			var tpl TemplateInfo
 			if err := json.Unmarshal(data, &tpl); err == nil {
-				// Use filename without extension as ID if not provided
+				// Utiliser le nom de fichier sans l'extension comme ID s'il n'est pas fourni
 				if tpl.ID == "" {
 					tpl.ID = strings.TrimSuffix(f.Name(), ".json")
 				}
@@ -85,16 +84,15 @@ func (h *Handler) GetTemplates(w http.ResponseWriter, r *http.Request) {
 // @Router       /v2/templates/{id} [get]
 func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	cfg := config.Load()
 
-	// Prevent path traversal
+	// Empêcher la traversée de chemin
 	cleanPath := filepath.Clean(id + ".json")
 	if strings.Contains(cleanPath, "..") || strings.Contains(cleanPath, "/") || strings.Contains(cleanPath, "\\") {
 		response.SendError(w, http.StatusBadRequest, "Invalid template ID")
 		return
 	}
 
-	fullPath := filepath.Join(cfg.TemplatesPath, cleanPath)
+	fullPath := filepath.Join(h.Config.TemplatesPath, cleanPath)
 	data, err := os.ReadFile(fullPath)
 	if err != nil {
 		response.SendError(w, http.StatusNotFound, "Template not found")
@@ -105,7 +103,7 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// Helper to write default templates
+// Fonction utilitaire pour écrire les modèles par défaut
 func writeDefaultTemplates(path string) {
 	defaults := map[string]string{
 		"minecraft.json": `{
@@ -127,7 +125,8 @@ func writeDefaultTemplates(path string) {
 					"EULA={{EULA}}",
 					"TYPE={{MC_TYPE}}",
 					"VERSION={{MC_VERSION}}",
-					"MEMORY={{SERVER_MEMORY}}"
+					"MEMORY={{SERVER_MEMORY}}",
+					"CREATE_CONSOLE_IN_PIPE=true"
 				],
 				"ports": {
 					"25565": "25565"

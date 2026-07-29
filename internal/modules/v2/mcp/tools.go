@@ -45,11 +45,10 @@ func saveCooldowns() {
 	}
 }
 
-func initClients() {
+func initClients(cfg *config.Config) {
 	if cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation()); err == nil {
 		dockerClient = cli
 	}
-	cfg := config.Load()
 	if cfg.OvhEndpoint != "" {
 		if oc, err := ovh.NewClient(cfg.OvhEndpoint, cfg.OvhAppKey, cfg.OvhAppSecret, cfg.OvhConsumerKey); err == nil {
 			ovhClient = oc
@@ -57,8 +56,8 @@ func initClients() {
 	}
 }
 
-func registerTools() {
-	initClients()
+func registerTools(cfg *config.Config) {
+	initClients(cfg)
 	loadCooldowns()
 
 	// 1. docker_list
@@ -142,7 +141,6 @@ func registerTools() {
 		containerName, _ := args["container_name"].(string)
 		reqPath, _ := args["file_path"].(string)
 
-		cfg := config.Load()
 		rootPath := filepath.Join(cfg.AllowedMountRoot, containerName)
 
 		root, err := os.OpenRoot(rootPath)
@@ -185,7 +183,7 @@ func registerTools() {
 		}
 		serviceName, _ := args["service_name"].(string)
 
-		// Cooldown check (15m)
+		// Vérification du délai d'attente (15m)
 		cooldownMutex.Lock()
 		lastReboot, exists := lastRebootMap[serviceName]
 		cooldownMutex.Unlock()
@@ -194,7 +192,7 @@ func registerTools() {
 			return mcp.NewToolResultError("cooldown active: cannot reboot this server again so soon"), nil
 		}
 
-		// Perform reboot via OVH
+		// Effectuer le redémarrage via OVH
 		err := ovhClient.Post(fmt.Sprintf("/dedicated/server/%s/reboot", serviceName), nil, nil)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to reboot server: %v", err)), nil

@@ -19,8 +19,8 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {object}  SystemInfo
 // @Router       /v2/docker/system/info [get]
-func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
-	cli := GetClient()
+func (h *Handler) GetSystemInfo(w http.ResponseWriter, r *http.Request) {
+	cli := h.Service.DockerCli
 
 	info, err := cli.Info(context.Background())
 	if err != nil {
@@ -48,11 +48,11 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      204
 // @Router       /v2/docker/system/prune [post]
-func PruneSystem(w http.ResponseWriter, r *http.Request) {
-	cli := GetClient()
+func (h *Handler) PruneSystem(w http.ResponseWriter, r *http.Request) {
+	cli := h.Service.DockerCli
 
-	// Pruning everything (images, containers, volumes, networks) requires separate calls in SDK
-	// This acts as a basic container prune for demonstration
+	// Le nettoyage complet (images, conteneurs, volumes, réseaux) nécessite des appels séparés dans le SDK
+	// Ceci agit comme un nettoyage basique des conteneurs pour le moment
 	_, err := cli.ContainersPrune(context.Background(), filters.NewArgs())
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
@@ -70,8 +70,8 @@ func PruneSystem(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      200  {string}  string "Event Stream"
 // @Router       /v2/docker/system/events [get]
-func StreamSystemEvents(w http.ResponseWriter, r *http.Request) {
-	cli := GetClient()
+func (h *Handler) StreamSystemEvents(w http.ResponseWriter, r *http.Request) {
+	cli := h.Service.DockerCli
 
 	msgs, errs := cli.Events(r.Context(), events.ListOptions{})
 

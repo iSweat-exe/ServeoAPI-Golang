@@ -10,13 +10,11 @@ import (
 
 var apiClient *ovh.Client
 
-// InitClient initializes the OVH API client singleton
-func InitClient() error {
-	cfg := config.Load()
-
-	// If no credentials, we skip initialization (module will be disabled)
+// InitClient initialise le client de l'API OVH (singleton)
+func InitClient(cfg *config.Config) error {
+	// Sans identifiants, on ignore l'initialisation (le module sera désactivé)
 	if cfg.OvhEndpoint == "" || cfg.OvhAppKey == "" {
-		log.Println("⚠️  OVH Module disabled (missing credentials in config)")
+		log.Println("OVH Module disabled (missing credentials in config)")
 		return nil
 	}
 
@@ -32,11 +30,11 @@ func InitClient() error {
 	}
 
 	apiClient = client
-	log.Println("✅ OVH Module initialized successfully")
+	log.Println("OVH Module initialized successfully")
 	return nil
 }
 
-// GetClient returns the initialized OVH client, or nil if not configured
+// GetClient retourne le client OVH initialisé, ou nil si non configuré
 func GetClient() *ovh.Client {
 	return apiClient
 }

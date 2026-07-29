@@ -19,9 +19,9 @@ import (
 // @Param        id   path      string  true  "Container ID"
 // @Success      200  {string}  string "Event Stream"
 // @Router       /v2/docker/containers/{id}/logs [get]
-func StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	cli := GetClient()
+	cli := h.Service.DockerCli
 
 	options := container.LogsOptions{
 		ShowStdout: true,
@@ -65,9 +65,9 @@ func StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
 // @Param        id   path      string  true  "Container ID"
 // @Success      200  {string}  string "Event Stream"
 // @Router       /v2/docker/containers/{id}/stats [get]
-func StreamContainerStats(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) StreamContainerStats(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	cli := GetClient()
+	cli := h.Service.DockerCli
 
 	statsResponse, err := cli.ContainerStats(r.Context(), id, true)
 	if err != nil {

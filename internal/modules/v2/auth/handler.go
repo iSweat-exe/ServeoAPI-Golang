@@ -16,7 +16,7 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-// TODO: In production, load this from an environment variable!
+// TODO: En production, charger ceci depuis une variable d'environnement !
 var JwtSecretKey = []byte("serveo_super_secret_key_change_me")
 
 type LoginRequest struct {
@@ -51,25 +51,25 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user User
-	// Find user by username
+	// Trouver l'utilisateur par son nom d'utilisateur
 	if err := h.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
 		response.SendError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
-	// Verify password hash
+	// Vérifier le hash du mot de passe
 	if err := user.CheckPassword(req.Password); err != nil {
 		response.SendError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
-	// Update LastConnection & Status
+	// Mettre à jour LastConnection et Status
 	now := time.Now().Unix()
 	user.LastConnection = &now
 	user.Status = "online"
 	h.DB.Save(&user)
 
-	// Generate JWT
+	// Générer le JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":           user.ID,
 		"username":      user.Username,
@@ -97,7 +97,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // @Success      204
 // @Router       /v2/auth/logout [post]
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	// Extract userID from context (injected by JWT middleware)
+	// Extraire userID du contexte (injecté par le middleware JWT)
 	userID, ok := contextkeys.GetUserID(r.Context())
 	if !ok {
 		response.SendError(w, http.StatusUnauthorized, "Unauthorized")

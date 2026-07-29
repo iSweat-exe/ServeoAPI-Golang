@@ -187,6 +187,148 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/backups/{server}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Lists available backups for a server",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "backups"
+                ],
+                "summary": "List Server Backups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server name (folder name)",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/backups.BackupInfo"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates a zip archive of the server's data folder",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "backups"
+                ],
+                "summary": "Create Server Backup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server name (folder name)",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/backups.BackupInfo"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/backups/{server}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Restores a server backup, overwriting existing files",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "backups"
+                ],
+                "summary": "Restore Server Backup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server name (folder name)",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Restore options",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/backups.RestoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/docker/compose/deploy": {
             "post": {
                 "security": [
@@ -508,6 +650,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/docker/containers/{id}/update": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates a container's environment variables or RAM limit transparently (recreates it)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "docker-containers"
+                ],
+                "summary": "Update a Docker Container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Container ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update configuration",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/docker.UpdateContainerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/docker.ContainerInfo"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/docker/containers/{id}/{action}": {
             "post": {
                 "security": [
@@ -688,7 +888,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "networks"
+                    "docker-networks"
                 ],
                 "summary": "Create a Docker Network",
                 "parameters": [
@@ -862,7 +1062,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "volumes"
+                    "docker-volumes"
                 ],
                 "summary": "Create a Docker Volume",
                 "parameters": [
@@ -1143,6 +1343,71 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/metadata.MetadataResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/metrics/history/containers/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the 24h metrics history for a specific container",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get Container Metrics History",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Container ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/metrics.ContainerStat"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/metrics/history/system": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the 24h metrics history for the bare-metal system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get System Metrics History",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/metrics.SystemStat"
+                            }
                         }
                     }
                 }
@@ -1621,6 +1886,10 @@ const docTemplate = `{
         },
         "auth.LoginRequest": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
                 "password": {
                     "type": "string"
@@ -1634,6 +1903,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "backups.BackupInfo": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "backups.RestoreRequest": {
+            "type": "object",
+            "properties": {
+                "filename": {
                     "type": "string"
                 }
             }
@@ -1810,6 +2101,21 @@ const docTemplate = `{
                 }
             }
         },
+        "docker.UpdateContainerRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "memory": {
+                    "description": "In bytes",
+                    "type": "integer"
+                }
+            }
+        },
         "docker.VolumeInfo": {
             "type": "object",
             "properties": {
@@ -1871,6 +2177,76 @@ const docTemplate = `{
                 },
                 "protocol_version": {
                     "type": "integer"
+                }
+            }
+        },
+        "metrics.ContainerStat": {
+            "type": "object",
+            "properties": {
+                "block_read": {
+                    "type": "number"
+                },
+                "block_write": {
+                    "type": "number"
+                },
+                "container_id": {
+                    "type": "string"
+                },
+                "cpu_percent": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "memory_limit": {
+                    "type": "integer"
+                },
+                "memory_percent": {
+                    "type": "number"
+                },
+                "memory_usage": {
+                    "type": "integer"
+                },
+                "network_rx": {
+                    "type": "number"
+                },
+                "network_tx": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "metrics.SystemStat": {
+            "type": "object",
+            "properties": {
+                "cpu_percent": {
+                    "type": "number"
+                },
+                "disk_total": {
+                    "type": "integer"
+                },
+                "disk_usage": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "memory_total": {
+                    "type": "integer"
+                },
+                "memory_usage": {
+                    "type": "integer"
+                },
+                "network_rx": {
+                    "type": "number"
+                },
+                "network_tx": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
                 }
             }
         },
@@ -1998,9 +2374,14 @@ const docTemplate = `{
         },
         "users.CreateUserRequest": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 8
                 },
                 "permissions": {
                     "type": "string"
@@ -2015,9 +2396,14 @@ const docTemplate = `{
         },
         "users.UpdatePasswordRequest": {
             "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
             "properties": {
                 "new_password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 8
                 },
                 "old_password": {
                     "type": "string"

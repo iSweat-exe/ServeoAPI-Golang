@@ -15,27 +15,21 @@ import (
 )
 
 func TestGetMe_Success(t *testing.T) {
-	// Setup DB
 	db, err := testutil.SetupTestDB(&auth.User{})
 	require.NoError(t, err)
 
-	// Create a test user
 	user := auth.User{
 		Username: "testuser",
 	}
 	require.NoError(t, db.Create(&user).Error)
 
-	// Create handler
 	h := &Handler{DB: db}
 
-	// Create request
 	req := testutil.NewAuthenticatedRequest("GET", "/v2/users/me", nil, user.ID, nil)
 	rr := httptest.NewRecorder()
 
-	// Call handler
 	h.GetMe(rr, req)
 
-	// Assertions
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	var response UserResponse
@@ -58,7 +52,6 @@ func TestUpdateMePassword_Success(t *testing.T) {
 
 	h := &Handler{DB: db}
 
-	// Body
 	reqBody := UpdatePasswordRequest{
 		OldPassword: "oldpassword123",
 		NewPassword: "newpassword123",
@@ -72,12 +65,12 @@ func TestUpdateMePassword_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, rr.Code)
 
-	// Check if token version was incremented
+	// Vérifier si la version du token a été incrémentée
 	var updatedUser auth.User
 	db.First(&updatedUser, user.ID)
 	assert.Equal(t, 2, updatedUser.TokenVersion)
 	
-	// Check if password was actually changed
+	// Vérifier si le mot de passe a bien été changé
 	assert.NoError(t, updatedUser.CheckPassword("newpassword123"))
 }
 
@@ -94,7 +87,6 @@ func TestUpdateMePassword_InvalidInput(t *testing.T) {
 
 	h := &Handler{DB: db}
 
-	// Body with missing new password
 	reqBody := UpdatePasswordRequest{
 		OldPassword: "oldpassword123",
 		NewPassword: "short", // less than 8 chars
@@ -106,10 +98,10 @@ func TestUpdateMePassword_InvalidInput(t *testing.T) {
 
 	h.UpdateMePassword(rr, req)
 
-	// Should fail validation (from go-playground/validator)
+	// Doit échouer à la validation (go-playground/validator)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	// Check that token version was NOT incremented
+	// Vérifier que la version du token n'a PAS été incrémentée
 	var updatedUser auth.User
 	db.First(&updatedUser, user.ID)
 	assert.Equal(t, 1, updatedUser.TokenVersion)

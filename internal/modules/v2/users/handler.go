@@ -26,7 +26,7 @@ type CreateUserRequest struct {
 type UpdateUserRequest struct {
 	Permissions    *string `json:"permissions"`
 	ProfilePicture *string `json:"profile_picture"`
-	Status         *string `json:"status"` // allow banning or forcing offline
+	Status         *string `json:"status"` // permet de bannir ou forcer la déconnexion
 }
 
 type UserResponse struct {
@@ -172,7 +172,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	// Prevent deleting yourself
+	// Empêcher la suppression de son propre compte
 	if userID, ok := contextkeys.GetUserID(r.Context()); ok {
 		idStr := strconv.FormatUint(uint64(userID), 10)
 		if id == idStr {

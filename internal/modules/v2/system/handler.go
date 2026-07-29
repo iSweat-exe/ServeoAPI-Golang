@@ -27,17 +27,17 @@ type Handler struct {
 // @Success      200  {object}  SystemResponse
 // @Router       /v2/system/ [get]
 func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
-	// Mem
+	// Mémoire
 	v, _ := mem.VirtualMemory()
 
-	// CPU (non-blocking snapshot)
+	// CPU (snapshot non bloquant)
 	c, _ := cpu.Percent(0, false)
 	cpuUsage := 0.0
 	if len(c) > 0 {
 		cpuUsage = c[0]
 	}
 
-	// Disk (root volume usually / on linux, C: on windows)
+	// Disque (volume racine généralement / sur linux, C: sur windows)
 	path := "/"
 	if runtime.GOOS == "windows" {
 		path = "C:\\"
@@ -49,7 +49,7 @@ func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
 		diskUsed = d.Used
 	}
 
-	// Network
+	// Réseau
 	n, _ := net.IOCounters(false)
 	var tx, rx uint64
 	if len(n) > 0 {
@@ -63,7 +63,7 @@ func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
 		ramUsed = v.Used
 	}
 
-	// Host Info
+	// Informations de l'hôte
 	h, _ := host.Info()
 	var platform, kernel, hostname string
 	var uptime uint64

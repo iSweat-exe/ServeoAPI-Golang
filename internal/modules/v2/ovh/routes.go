@@ -3,23 +3,24 @@ package ovh
 import (
 	"net/http"
 
+	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/middleware"
 	"gorm.io/gorm"
 )
 
-// RegisterRoutes sets up the API endpoints for the ovh module
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB) {
+// RegisterRoutes configure les endpoints de l'API pour le module ovh
+func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB, cfg *config.Config) {
 	h := &Handler{DB: db}
-	// Initialize Client Singleton
-	if err := InitClient(); err != nil {
-		// Log the error but don't crash, the module will just be disabled
+	// Initialisation du client Singleton
+	if err := InitClient(cfg); err != nil {
+		// Ne pas crasher en cas d'erreur, le module sera simplement désactivé
 		return
 	}
 
-	// Require 'ovh.read' permission for viewing servers
+	// Nécessite la permission 'ovh.read' pour consulter les serveurs
 	mux.Handle("GET /v2/ovh/me", authMiddleware(middleware.RequirePermission("ovh.read", http.HandlerFunc(h.GetMe))))
 	mux.Handle("GET /v2/ovh/dedicated/server", authMiddleware(middleware.RequirePermission("ovh.read", http.HandlerFunc(h.ListDedicatedServers))))
 
-	// Require 'ovh.write' permission for destructive actions
+	// Nécessite la permission 'ovh.write' pour les actions destructrices
 	mux.Handle("POST /v2/ovh/dedicated/server/{serviceName}/reboot", authMiddleware(middleware.RequirePermission("ovh.write", http.HandlerFunc(h.HardRebootServer))))
 }

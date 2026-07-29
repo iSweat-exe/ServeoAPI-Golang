@@ -57,7 +57,7 @@ func (h *Handler) UpdateMePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // limite 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // limite de 1 Mo
 
 	var req UpdatePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -91,7 +91,7 @@ func (h *Handler) UpdateMePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Increment TokenVersion to invalidate all existing tokens for this user
+	// Incrémente TokenVersion pour invalider tous les tokens existants de cet utilisateur
 	user.TokenVersion++
 
 	if err := h.DB.Save(&user).Error; err != nil {

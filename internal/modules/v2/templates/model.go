@@ -4,22 +4,22 @@ import (
 	"serveoapi/internal/modules/v2/docker"
 )
 
-// TemplateInfo represents a full application or game server template
+// TemplateInfo représente un modèle complet d'application ou de serveur de jeu
 type TemplateInfo struct {
 	ID          string                        `json:"id"`
 	Name        string                        `json:"name"`
 	Description string                        `json:"description"`
 	Logo        string                        `json:"logo"`
-	Category    string                        `json:"category"`  // e.g., "game", "database", "app", "lang"
-	Variables   []TemplateVariable            `json:"variables"` // Variables to prompt the user for
-	Docker      docker.CreateContainerRequest `json:"docker"`    // The exact payload to send to /v2/docker/containers/create
+	Category    string                        `json:"category"`  // ex: "game", "database", "app", "lang"
+	Variables   []TemplateVariable            `json:"variables"` // Variables à demander à l'utilisateur
+	Docker      docker.CreateContainerRequest `json:"docker"`    // Le payload exact à envoyer à /v2/docker/containers/create
 }
 
-// TemplateVariable defines a configuration field that the user can set
+// TemplateVariable définit un champ de configuration que l'utilisateur peut définir
 type TemplateVariable struct {
-	Name        string `json:"name"`        // The placeholder name used in the Docker config (e.g., "SERVER_NAME")
-	Label       string `json:"label"`       // The UI label (e.g., "Server Name")
-	Description string `json:"description"` // UI description
-	Default     string `json:"default"`     // Default value
-	Required    bool   `json:"required"`    // Is it mandatory?
+	Name        string `json:"name"`        // Le nom du placeholder utilisé dans la config Docker (ex: "SERVER_NAME")
+	Label       string `json:"label"`       // Le label pour l'UI (ex: "Server Name")
+	Description string `json:"description"` // Description pour l'UI
+	Default     string `json:"default"`     // Valeur par défaut
+	Required    bool   `json:"required"`    // Est-ce obligatoire ?
 }

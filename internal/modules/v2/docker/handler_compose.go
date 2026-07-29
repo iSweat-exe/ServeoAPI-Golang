@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	"serveoapi/internal/core/config"
 )
 
 type DeployStackRequest struct {
@@ -30,7 +29,7 @@ type DeployStackRequest struct {
 // @Success      201  {string}  string "Stack deployed successfully"
 // @Failure      400,500 {string} string
 // @Router       /v2/docker/compose/deploy [post]
-func DeployStack(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeployStack(w http.ResponseWriter, r *http.Request) {
 	var req DeployStackRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid body")
@@ -42,10 +41,9 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg := config.Load()
-	allowedRoot := cfg.AllowedMountRoot
+	allowedRoot := h.Service.Config.AllowedMountRoot
 
-	// 1. Security Check: Parse YAML and inspect Volumes
+	// 1. Vérification de sécurité: Analyser le YAML et inspecter les volumes
 	var compose map[string]interface{}
 	if err := yaml.Unmarshal([]byte(req.Content), &compose); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid YAML format: "+err.Error())
@@ -71,14 +69,14 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 							parts := strings.SplitN(volStr, ":", 2)
 							src := parts[0]
 
-							// If it's a bind mount or relative path
+							// S'il s'agit d'un bind mount ou d'un chemin relatif
 							if strings.Contains(src, "/") || strings.Contains(src, "\\") || strings.HasPrefix(src, ".") {
-								// Deny any relative paths entirely for safety
+								// Refuser totalement les chemins relatifs par sécurité
 								if strings.HasPrefix(src, ".") {
 									response.SendError(w, http.StatusBadRequest, "Security Error: Relative paths in volumes are forbidden in service '"+srvName+"'")
 									return
 								}
-								// Check absolute path
+								// Vérifier le chemin absolu
 								if !strings.HasPrefix(src, allowedRoot) {
 									response.SendError(w, http.StatusBadRequest, "Security Error: Bind mounts are restricted to "+allowedRoot+" in service '"+srvName+"'")
 									return
@@ -91,7 +89,7 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 2. Write YAML to a temporary file
+	// 2. Écrire le YAML dans un fichier temporaire
 	tmpDir := os.TempDir()
 	fileName := filepath.Join(tmpDir, "serveo_stack_"+req.Name+"_"+time.Now().Format("20060102150405")+".yml")
 
@@ -100,11 +98,10 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Note: We don't delete the file immediately if we want to allow 'docker compose down' later,
-	// but for this endpoint we just run 'up -d' and let the user manage it via CLI or we add a delete endpoint later.
-	// We'll leave the file in /tmp.
+	// Remarque : Nous ne supprimons pas le fichier immédiatement pour permettre un éventuel 'docker compose down' ultérieur,
+	// mais pour cet endpoint nous exécutons juste 'up -d' et laissons l'utilisateur gérer via CLI. Le fichier reste dans /tmp.
 
-	// 3. Execute `docker compose up -d`
+	// 3. Exécuter `docker compose up -d`
 	cmd := exec.CommandContext(r.Context(), "docker", "compose", "-f", fileName, "-p", req.Name, "up", "-d")
 	out, err := cmd.CombinedOutput()
 	if err != nil {

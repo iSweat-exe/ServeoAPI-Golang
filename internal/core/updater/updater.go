@@ -26,7 +26,7 @@ type GithubAsset struct {
 
 // RunCheckAndUpdate checks for a new release and applies the update if one is found.
 func RunCheckAndUpdate() {
-	log.Printf("🔄 Checking for updates (Current version: %s)...", config.AppVersion)
+	log.Printf("Checking for updates (Current version: %s)...", config.AppVersion)
 
 	resp, err := http.Get(repoAPI)
 	if err != nil {
@@ -44,11 +44,11 @@ func RunCheckAndUpdate() {
 	}
 
 	if release.TagName == config.AppVersion {
-		log.Printf("✅ ServeoAPI is already up-to-date (%s)", config.AppVersion)
+		log.Printf("ServeoAPI is already up-to-date (%s)", config.AppVersion)
 		return
 	}
 
-	log.Printf("🚀 New version found: %s! Looking for compatible binary...", release.TagName)
+	log.Printf("New version found: %s! Looking for compatible binary...", release.TagName)
 
 	// Build expected asset name, e.g. "serveoapi_linux_amd64"
 	expectedName := fmt.Sprintf("serveoapi_%s_%s", runtime.GOOS, runtime.GOARCH)
@@ -68,7 +68,7 @@ func RunCheckAndUpdate() {
 		log.Fatalf("❌ No compatible binary found for %s in release %s", expectedName, release.TagName)
 	}
 
-	log.Printf("⬇️ Downloading %s...", downloadURL)
+	log.Printf("Downloading %s...", downloadURL)
 	downloadResp, err := http.Get(downloadURL)
 	if err != nil {
 		log.Fatalf("❌ Failed to download update: %v", err)
@@ -79,7 +79,7 @@ func RunCheckAndUpdate() {
 		log.Fatalf("❌ Failed to download update, status: %s", downloadResp.Status)
 	}
 
-	log.Println("⚙️ Applying update...")
+	log.Println("Applying update...")
 	err = selfupdate.Apply(downloadResp.Body, selfupdate.Options{})
 	if err != nil {
 		log.Fatalf("❌ Update failed: %v", err)

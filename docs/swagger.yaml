@@ -34,10 +34,27 @@ definitions:
         type: string
       username:
         type: string
+    required:
+    - password
+    - username
     type: object
   auth.LoginResponse:
     properties:
       token:
+        type: string
+    type: object
+  backups.BackupInfo:
+    properties:
+      created_at:
+        type: string
+      filename:
+        type: string
+      size:
+        type: integer
+    type: object
+  backups.RestoreRequest:
+    properties:
+      filename:
         type: string
     type: object
   docker.ContainerInfo:
@@ -153,6 +170,16 @@ definitions:
       server_version:
         type: string
     type: object
+  docker.UpdateContainerRequest:
+    properties:
+      env:
+        items:
+          type: string
+        type: array
+      memory:
+        description: In bytes
+        type: integer
+    type: object
   docker.VolumeInfo:
     properties:
       driver:
@@ -194,6 +221,52 @@ definitions:
         type: string
       protocol_version:
         type: integer
+    type: object
+  metrics.ContainerStat:
+    properties:
+      block_read:
+        type: number
+      block_write:
+        type: number
+      container_id:
+        type: string
+      cpu_percent:
+        type: number
+      id:
+        type: integer
+      memory_limit:
+        type: integer
+      memory_percent:
+        type: number
+      memory_usage:
+        type: integer
+      network_rx:
+        type: number
+      network_tx:
+        type: number
+      timestamp:
+        type: string
+    type: object
+  metrics.SystemStat:
+    properties:
+      cpu_percent:
+        type: number
+      disk_total:
+        type: integer
+      disk_usage:
+        type: integer
+      id:
+        type: integer
+      memory_total:
+        type: integer
+      memory_usage:
+        type: integer
+      network_rx:
+        type: number
+      network_tx:
+        type: number
+      timestamp:
+        type: string
     type: object
   ovh.OvhMeResponse:
     properties:
@@ -279,6 +352,7 @@ definitions:
   users.CreateUserRequest:
     properties:
       password:
+        minLength: 8
         type: string
       permissions:
         type: string
@@ -286,13 +360,20 @@ definitions:
         type: string
       username:
         type: string
+    required:
+    - password
+    - username
     type: object
   users.UpdatePasswordRequest:
     properties:
       new_password:
+        minLength: 8
         type: string
       old_password:
         type: string
+    required:
+    - new_password
+    - old_password
     type: object
   users.UpdateUserRequest:
     properties:
@@ -434,6 +515,96 @@ paths:
       summary: Logout from the API
       tags:
       - auth
+  /v2/backups/{server}:
+    get:
+      description: Lists available backups for a server
+      parameters:
+      - description: Server name (folder name)
+        in: path
+        name: server
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/backups.BackupInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Server Backups
+      tags:
+      - backups
+    post:
+      description: Creates a zip archive of the server's data folder
+      parameters:
+      - description: Server name (folder name)
+        in: path
+        name: server
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backups.BackupInfo'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create Server Backup
+      tags:
+      - backups
+  /v2/backups/{server}/restore:
+    post:
+      consumes:
+      - application/json
+      description: Restores a server backup, overwriting existing files
+      parameters:
+      - description: Server name (folder name)
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Restore options
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/backups.RestoreRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Restore Server Backup
+      tags:
+      - backups
   /v2/docker/compose/deploy:
     post:
       consumes:
@@ -630,6 +801,44 @@ paths:
       summary: Stream Container Stats (SSE)
       tags:
       - docker-containers
+  /v2/docker/containers/{id}/update:
+    put:
+      consumes:
+      - application/json
+      description: Updates a container's environment variables or RAM limit transparently
+        (recreates it)
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update configuration
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/docker.UpdateContainerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/docker.ContainerInfo'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a Docker Container
+      tags:
+      - docker-containers
   /v2/docker/containers/create:
     post:
       consumes:
@@ -774,7 +983,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create a Docker Network
       tags:
-      - networks
+      - docker-networks
   /v2/docker/networks/{id}:
     delete:
       description: Removes a network by ID
@@ -880,7 +1089,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create a Docker Volume
       tags:
-      - volumes
+      - docker-volumes
   /v2/docker/volumes/{name}:
     delete:
       description: Removes a volume by name
@@ -1040,6 +1249,46 @@ paths:
       summary: Get API Metadata
       tags:
       - metadata
+  /v2/metrics/history/containers/{id}:
+    get:
+      description: Returns the 24h metrics history for a specific container
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/metrics.ContainerStat'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get Container Metrics History
+      tags:
+      - metrics
+  /v2/metrics/history/system:
+    get:
+      description: Returns the 24h metrics history for the bare-metal system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/metrics.SystemStat'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get System Metrics History
+      tags:
+      - metrics
   /v2/ovh/dedicated/server:
     get:
       consumes:

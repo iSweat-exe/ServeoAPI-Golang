@@ -10,14 +10,14 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-// OvhMeResponse represents basic account information
+// OvhMeResponse représente les informations de base du compte
 type OvhMeResponse struct {
 	Firstname string `json:"firstname"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 }
 
-// CheckConfig is a helper to verify if the module is enabled
+// CheckConfig est une fonction utilitaire pour vérifier si le module est activé
 func checkConfig(w http.ResponseWriter) bool {
 	if GetClient() == nil {
 		response.SendError(w, http.StatusServiceUnavailable, "OVH Module is not configured on this API")
@@ -93,11 +93,7 @@ func (h *Handler) HardRebootServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// OVH Reboot Endpoint
-	// Requires a payload {"reason": "string"} according to OVH API docs?
-	// Usually POST /dedicated/server/{serviceName}/reboot takes empty body or empty map?
-	// The docs say no parameters required for basic reboot, but sometimes a struct is needed.
-	// We'll pass nil for body.
+	// Endpoint OVH pour redémarrer. Passage de nil pour le body.
 
 	var task map[string]interface{}
 	err := GetClient().Post("/dedicated/server/"+serviceName+"/reboot", nil, &task)
