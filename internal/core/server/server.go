@@ -27,7 +27,7 @@ func Start(cfg *config.Config, handler http.Handler) {
 	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("🚀 ServeoAPI is running on port %s [%s]", cfg.Port, cfg.Env)
+		log.Printf("🚀 ServeoAPI %s is running on port %s [%s]", config.AppVersion, cfg.Port, cfg.Env)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("❌ Server failure: %v", err)
 		}

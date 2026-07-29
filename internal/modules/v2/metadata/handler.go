@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"runtime"
+
+	"serveoapi/internal/core/config"
 )
 
 // GetMetadata godoc
@@ -18,12 +20,12 @@ import (
 func GetMetadata(w http.ResponseWriter, r *http.Request) {
 	resp := MetadataResponse{
 		Author:          "iSweat",
-		APIVersion:      "2.0.0",
+		APIVersion:      config.AppVersion,
 		GoVersion:       runtime.Version(),
 		Deprecated:      false,
 		GithubLink:      "https://github.com/isweat-exe/ServeoAPI-Golang",
 		ProtocolVersion: 2,
-		CommitHash:      "unknown", // En production, ceci pourrait être injecté via des ldflags au build
+		CommitHash:      config.CommitHash,
 		DeprecationInfo: "",
 	}
 

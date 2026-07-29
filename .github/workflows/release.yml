@@ -1,0 +1,63 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: arm
+          - goos: windows
+            goarch: amd64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5' # Vous pouvez ajuster cette version si nécessaire
+
+      - name: Get Version info
+        id: vars
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_OUTPUT
+
+      - name: Build Binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          LDFLAGS="-s -w -X serveoapi/internal/core/config.AppVersion=${{ steps.vars.outputs.VERSION }} -X serveoapi/internal/core/config.CommitHash=${{ steps.vars.outputs.COMMIT_HASH }}"
+          BINARY_NAME="serveoapi_${{ matrix.goos }}_${{ matrix.goarch }}"
+          
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BINARY_NAME="${BINARY_NAME}.exe"
+          fi
+          
+          go build -ldflags "$LDFLAGS" -o $BINARY_NAME ./cmd/api
+
+      - name: Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: serveoapi_*

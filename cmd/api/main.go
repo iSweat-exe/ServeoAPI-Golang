@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"os"
 	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/database"
 	"serveoapi/internal/core/server"
+	"serveoapi/internal/core/updater"
 	"serveoapi/internal/modules/v2/auth"
 	"serveoapi/internal/router"
 )
@@ -29,6 +31,12 @@ import (
 // @name Authorization
 
 func main() {
+	// CLI Interceptor for auto-update
+	if len(os.Args) > 1 && os.Args[1] == "update" {
+		updater.RunCheckAndUpdate()
+		return
+	}
+
 	cfg := config.Load()
 
 	// Initialize Database
