@@ -14,7 +14,7 @@ import (
 	"serveoapi/internal/testutil"
 )
 
-func TestCreateApiKey_Success(t *testing.T) {
+func TestCreateApiKeySuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&ApiKey{})
 	require.NoError(t, err)
 
@@ -48,7 +48,7 @@ func TestCreateApiKey_Success(t *testing.T) {
 	assert.NotEmpty(t, apiKey.Prefix)
 }
 
-func TestCreateApiKey_MissingName(t *testing.T) {
+func TestCreateApiKeyMissingName(t *testing.T) {
 	db, err := testutil.SetupTestDB(&ApiKey{})
 	require.NoError(t, err)
 
@@ -67,7 +67,7 @@ func TestCreateApiKey_MissingName(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
 
-func TestListApiKeys_Success(t *testing.T) {
+func TestListApiKeysSuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&ApiKey{})
 	require.NoError(t, err)
 
@@ -95,7 +95,7 @@ func TestListApiKeys_Success(t *testing.T) {
 	assert.Equal(t, "User1 Key2", response[1].Name)
 }
 
-func TestRevokeApiKey_Success(t *testing.T) {
+func TestRevokeApiKeySuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&ApiKey{})
 	require.NoError(t, err)
 
@@ -118,7 +118,7 @@ func TestRevokeApiKey_Success(t *testing.T) {
 	assert.Equal(t, int64(0), count)
 }
 
-func TestRevokeApiKey_NotFound(t *testing.T) {
+func TestRevokeApiKeyNotFound(t *testing.T) {
 	db, err := testutil.SetupTestDB(&ApiKey{})
 	require.NoError(t, err)
 

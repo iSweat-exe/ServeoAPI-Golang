@@ -1,9 +1,10 @@
 package docker
 
 import (
-	"serveoapi/internal/core/response"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"serveoapi/internal/core/response"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,44 +51,71 @@ func (h *Handler) DeployStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if services, ok := compose["services"].(map[string]interface{}); ok {
-		for srvName, srvData := range services {
-			if srvMap, ok := srvData.(map[string]interface{}); ok {
-				if volumes, ok := srvMap["volumes"].([]interface{}); ok {
-					for _, vol := range volumes {
-						volStr := ""
-						switch v := vol.(type) {
-						case string:
-							volStr = v
-						case map[string]interface{}:
-							if src, ok := v["source"].(string); ok {
-								volStr = src + ":..."
-							}
-						}
+	if err := validateComposeVolumes(compose, allowedRoot); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
-						if volStr != "" {
-							parts := strings.SplitN(volStr, ":", 2)
-							src := parts[0]
+	h.executeDeploy(w, r, req)
+}
 
-							// S'il s'agit d'un bind mount ou d'un chemin relatif
-							if strings.Contains(src, "/") || strings.Contains(src, "\\") || strings.HasPrefix(src, ".") {
-								// Refuser totalement les chemins relatifs par sécurité
-								if strings.HasPrefix(src, ".") {
-									response.SendError(w, http.StatusBadRequest, "Security Error: Relative paths in volumes are forbidden in service '"+srvName+"'")
-									return
-								}
-								// Vérifier le chemin absolu
-								if !strings.HasPrefix(src, allowedRoot) {
-									response.SendError(w, http.StatusBadRequest, "Security Error: Bind mounts are restricted to "+allowedRoot+" in service '"+srvName+"'")
-									return
-								}
-							}
-						}
-					}
-				}
+func validateComposeVolumes(compose map[string]interface{}, allowedRoot string) error {
+	services, ok := compose["services"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	for srvName, srvData := range services {
+		srvMap, ok := srvData.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		volumes, ok := srvMap["volumes"].([]interface{})
+		if !ok {
+			continue
+		}
+
+		for _, vol := range volumes {
+			if err := validateVolume(vol, srvName, allowedRoot); err != nil {
+				return err
 			}
 		}
 	}
+	return nil
+}
+
+func validateVolume(vol interface{}, srvName, allowedRoot string) error {
+	volStr := ""
+	switch v := vol.(type) {
+	case string:
+		volStr = v
+	case map[string]interface{}:
+		if src, ok := v["source"].(string); ok {
+			volStr = src + ":..."
+		}
+	}
+
+	if volStr == "" {
+		return nil
+	}
+
+	parts := strings.SplitN(volStr, ":", 2)
+	src := parts[0]
+
+	if strings.Contains(src, "/") || strings.Contains(src, "\\") || strings.HasPrefix(src, ".") {
+		if strings.HasPrefix(src, ".") {
+			return fmt.Errorf("Security Error: Relative paths in volumes are forbidden in service '%s'", srvName)
+		}
+		if !strings.HasPrefix(src, allowedRoot) {
+			return fmt.Errorf("Security Error: Bind mounts are restricted to %s in service '%s'", allowedRoot, srvName)
+		}
+	}
+	return nil
+}
+
+// executeDeploy continues the logic of DeployStack
+func (h *Handler) executeDeploy(w http.ResponseWriter, r *http.Request, req DeployStackRequest) {
 
 	// 2. Écrire le YAML dans un fichier temporaire
 	tmpDir := os.TempDir()

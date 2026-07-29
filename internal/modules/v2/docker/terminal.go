@@ -178,57 +178,10 @@ func (h *Handler) TerminalHandler(w http.ResponseWriter, r *http.Request) {
 	errChan := make(chan error, 2)
 
 	// Goroutine 1 : Lecture depuis WebSocket (Contrôles JSON) -> Écriture vers Docker Stdin & Redimensionnement
-	go func() {
-		for {
-			msgType, payload, err := ws.ReadMessage()
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			if msgType == websocket.TextMessage {
-				var ctrl TerminalControlMessage
-				if err := json.Unmarshal(payload, &ctrl); err == nil {
-					switch ctrl.Type {
-					case "input":
-						_, err := hijackedResp.Conn.Write([]byte(ctrl.Data))
-						if err != nil {
-							errChan <- err
-							return
-						}
-					case "resize":
-						_ = cli.ContainerExecResize(ctx, execResp.ID, container.ResizeOptions{
-							Height: ctrl.Rows,
-							Width:  ctrl.Cols,
-						})
-					}
-				}
-			}
-		}
-	}()
+	go handleTerminalInput(ctx, ws, cli, execResp.ID, hijackedResp.Conn, errChan)
 
 	// Goroutine 2 : Lecture depuis Docker (Stream brut) -> Écriture vers WebSocket (Binaire)
-	go func() {
-		buf := make([]byte, 8192)
-		for {
-			n, err := hijackedResp.Reader.Read(buf)
-			if n > 0 {
-				errWrite := ws.WriteMessage(websocket.BinaryMessage, buf[:n])
-				if errWrite != nil {
-					errChan <- errWrite
-					return
-				}
-			}
-			if err != nil {
-				if err == io.EOF {
-					errChan <- nil // Sortie normale
-				} else {
-					errChan <- err
-				}
-				return
-			}
-		}
-	}()
+	go handleTerminalOutput(ws, hijackedResp.Reader, errChan)
 
 	// Attendre que la première goroutine se termine (soit l'utilisateur a fermé le WS, soit le shell s'est arrêté)
 	err = <-errChan
@@ -244,4 +197,53 @@ func (h *Handler) TerminalHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Les defer ws.Close() et hijackedResp.Close() vont maintenant s'exécuter,
 	// débloquant de force l'autre goroutine et nettoyant toutes les ressources.
+}
+
+func handleTerminalInput(ctx context.Context, ws *websocket.Conn, cli *client.Client, execID string, conn io.Writer, errChan chan<- error) {
+	for {
+		msgType, payload, err := ws.ReadMessage()
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		if msgType == websocket.TextMessage {
+			var ctrl TerminalControlMessage
+			if err := json.Unmarshal(payload, &ctrl); err == nil {
+				switch ctrl.Type {
+				case "input":
+					if _, err := conn.Write([]byte(ctrl.Data)); err != nil {
+						errChan <- err
+						return
+					}
+				case "resize":
+					_ = cli.ContainerExecResize(ctx, execID, container.ResizeOptions{
+						Height: ctrl.Rows,
+						Width:  ctrl.Cols,
+					})
+				}
+			}
+		}
+	}
+}
+
+func handleTerminalOutput(ws *websocket.Conn, reader io.Reader, errChan chan<- error) {
+	buf := make([]byte, 8192)
+	for {
+		n, err := reader.Read(buf)
+		if n > 0 {
+			if errWrite := ws.WriteMessage(websocket.BinaryMessage, buf[:n]); errWrite != nil {
+				errChan <- errWrite
+				return
+			}
+		}
+		if err != nil {
+			if err == io.EOF {
+				errChan <- nil // Sortie normale
+			} else {
+				errChan <- err
+			}
+			return
+		}
+	}
 }

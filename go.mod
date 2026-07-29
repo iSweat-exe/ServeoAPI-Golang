@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	aead.dev/minisign v0.2.0 // indirect
+	aead.dev/minisign v0.3.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

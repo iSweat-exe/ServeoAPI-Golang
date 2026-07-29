@@ -13,7 +13,7 @@ import (
 	"serveoapi/internal/testutil"
 )
 
-func TestLogin_Success(t *testing.T) {
+func TestLoginSuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&User{})
 	require.NoError(t, err)
 
@@ -51,7 +51,7 @@ func TestLogin_Success(t *testing.T) {
 	assert.NotNil(t, updatedUser.LastConnection)
 }
 
-func TestLogin_InvalidCredentials(t *testing.T) {
+func TestLoginInvalidCredentials(t *testing.T) {
 	db, err := testutil.SetupTestDB(&User{})
 	require.NoError(t, err)
 
@@ -77,7 +77,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
 
-func TestLogout_Success(t *testing.T) {
+func TestLogoutSuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&User{})
 	require.NoError(t, err)
 

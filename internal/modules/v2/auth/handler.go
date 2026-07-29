@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,8 +17,14 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-// TODO: En production, charger ceci depuis une variable d'environnement !
-var JwtSecretKey = []byte("serveo_super_secret_key_change_me")
+var JwtSecretKey = []byte(getEnvOrDefault("JWT_SECRET", "serveo_super_secret_key_change_me"))
+
+func getEnvOrDefault(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
 
 type LoginRequest struct {
 	Username string `json:"username" validate:"required"`

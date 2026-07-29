@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"serveoapi/internal/core/database"
-	"github.com/docker/docker/client"
-
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -84,115 +84,118 @@ func collectSystemMetrics() {
 	database.DB.Where("timestamp < ?", time.Now().Add(-24*time.Hour)).Delete(&SystemStat{})
 }
 
+type ContainerStatsData struct {
+	CPUStats struct {
+		CPUUsage struct {
+			TotalUsage  uint64   `json:"total_usage"`
+			PercpuUsage []uint64 `json:"percpu_usage"`
+		} `json:"cpu_usage"`
+		SystemUsage uint64 `json:"system_cpu_usage"`
+	} `json:"cpu_stats"`
+	PreCPUStats struct {
+		CPUUsage struct {
+			TotalUsage uint64 `json:"total_usage"`
+		} `json:"cpu_usage"`
+		SystemUsage uint64 `json:"system_cpu_usage"`
+	} `json:"precpu_stats"`
+	MemoryStats struct {
+		Usage uint64            `json:"usage"`
+		Limit uint64            `json:"limit"`
+		Stats map[string]uint64 `json:"stats"`
+	} `json:"memory_stats"`
+	Networks map[string]struct {
+		RxBytes uint64 `json:"rx_bytes"`
+		TxBytes uint64 `json:"tx_bytes"`
+	} `json:"networks"`
+	BlkioStats struct {
+		IoServiceBytesRecursive []struct {
+			Major uint64 `json:"major"`
+			Minor uint64 `json:"minor"`
+			Op    string `json:"op"`
+			Value uint64 `json:"value"`
+		} `json:"io_service_bytes_recursive"`
+	} `json:"blkio_stats"`
+}
+
 func collectContainerMetrics(dockerCli *client.Client) {
-	cli := dockerCli
-	if cli == nil {
+	if dockerCli == nil {
 		return
 	}
 	ctx := context.Background()
-	containers, err := cli.ContainerList(ctx, container.ListOptions{})
+	containers, err := dockerCli.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		log.Printf("Failed to list containers for metrics: %v", err)
 		return
 	}
 
 	for _, c := range containers {
-		stats, err := cli.ContainerStats(ctx, c.ID, false)
-		if err != nil {
-			continue
-		}
-		
-		var v struct {
-			CPUStats struct {
-				CPUUsage struct {
-					TotalUsage  uint64   `json:"total_usage"`
-					PercpuUsage []uint64 `json:"percpu_usage"`
-				} `json:"cpu_usage"`
-				SystemUsage uint64 `json:"system_cpu_usage"`
-			} `json:"cpu_stats"`
-			PreCPUStats struct {
-				CPUUsage struct {
-					TotalUsage uint64 `json:"total_usage"`
-				} `json:"cpu_usage"`
-				SystemUsage uint64 `json:"system_cpu_usage"`
-			} `json:"precpu_stats"`
-			MemoryStats struct {
-				Usage uint64            `json:"usage"`
-				Limit uint64            `json:"limit"`
-				Stats map[string]uint64 `json:"stats"`
-			} `json:"memory_stats"`
-			Networks map[string]struct {
-				RxBytes uint64 `json:"rx_bytes"`
-				TxBytes uint64 `json:"tx_bytes"`
-			} `json:"networks"`
-			BlkioStats struct {
-				IoServiceBytesRecursive []struct {
-					Major uint64 `json:"major"`
-					Minor uint64 `json:"minor"`
-					Op    string `json:"op"`
-					Value uint64 `json:"value"`
-				} `json:"io_service_bytes_recursive"`
-			} `json:"blkio_stats"`
-		}
-		
-		if err := json.NewDecoder(stats.Body).Decode(&v); err != nil {
-			stats.Body.Close()
-			continue
-		}
-		stats.Body.Close()
-
-		cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage) - float64(v.PreCPUStats.CPUUsage.TotalUsage)
-		systemDelta := float64(v.CPUStats.SystemUsage) - float64(v.PreCPUStats.SystemUsage)
-		cpuPercent := 0.0
-		if systemDelta > 0.0 && cpuDelta > 0.0 {
-			cpuPercent = (cpuDelta / systemDelta) * float64(len(v.CPUStats.CPUUsage.PercpuUsage)) * 100.0
-		}
-
-		memUsage := float64(v.MemoryStats.Usage) - float64(v.MemoryStats.Stats["cache"])
-		memLimit := float64(v.MemoryStats.Limit)
-		memPercent := 0.0
-		if memLimit > 0 {
-			memPercent = (memUsage / memLimit) * 100.0
-		}
-
-		var rx, tx float64
-		for _, network := range v.Networks {
-			rx += float64(network.RxBytes)
-			tx += float64(network.TxBytes)
-		}
-
-		var blkRead, blkWrite float64
-		for _, io := range v.BlkioStats.IoServiceBytesRecursive {
-			if len(io.Op) > 0 && (io.Op[0] == 'r' || io.Op[0] == 'R') {
-				blkRead += float64(io.Value)
-			} else if len(io.Op) > 0 && (io.Op[0] == 'w' || io.Op[0] == 'W') {
-				blkWrite += float64(io.Value)
-			}
-		}
-
-		id := c.ID
-		if len(id) > 12 {
-			id = id[:12]
-		}
-
-		stat := ContainerStat{
-			ContainerID:   id,
-			Timestamp:     time.Now(),
-			CPUPercent:    cpuPercent,
-			MemoryUsage:   uint64(memUsage),
-			MemoryLimit:   uint64(memLimit),
-			MemoryPercent: memPercent,
-			NetworkRx:     rx,
-			NetworkTx:     tx,
-			BlockRead:     blkRead,
-			BlockWrite:    blkWrite,
-		}
-
-		if err := database.DB.Create(&stat).Error; err != nil {
-			log.Printf("Failed to save container metrics: %v", err)
-		}
+		processContainerStats(ctx, dockerCli, c)
 	}
 
 	// Nettoyage des anciens enregistrements (plus de 24h)
 	database.DB.Where("timestamp < ?", time.Now().Add(-24*time.Hour)).Delete(&ContainerStat{})
+}
+
+func processContainerStats(ctx context.Context, cli *client.Client, c types.Container) {
+	stats, err := cli.ContainerStats(ctx, c.ID, false)
+	if err != nil {
+		return
+	}
+	defer stats.Body.Close()
+
+	var v ContainerStatsData
+	if err := json.NewDecoder(stats.Body).Decode(&v); err != nil {
+		return
+	}
+
+	cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage) - float64(v.PreCPUStats.CPUUsage.TotalUsage)
+	systemDelta := float64(v.CPUStats.SystemUsage) - float64(v.PreCPUStats.SystemUsage)
+	cpuPercent := 0.0
+	if systemDelta > 0.0 && cpuDelta > 0.0 {
+		cpuPercent = (cpuDelta / systemDelta) * float64(len(v.CPUStats.CPUUsage.PercpuUsage)) * 100.0
+	}
+
+	memUsage := float64(v.MemoryStats.Usage) - float64(v.MemoryStats.Stats["cache"])
+	memLimit := float64(v.MemoryStats.Limit)
+	memPercent := 0.0
+	if memLimit > 0 {
+		memPercent = (memUsage / memLimit) * 100.0
+	}
+
+	var rx, tx float64
+	for _, network := range v.Networks {
+		rx += float64(network.RxBytes)
+		tx += float64(network.TxBytes)
+	}
+
+	var blkRead, blkWrite float64
+	for _, io := range v.BlkioStats.IoServiceBytesRecursive {
+		if len(io.Op) > 0 && (io.Op[0] == 'r' || io.Op[0] == 'R') {
+			blkRead += float64(io.Value)
+		} else if len(io.Op) > 0 && (io.Op[0] == 'w' || io.Op[0] == 'W') {
+			blkWrite += float64(io.Value)
+		}
+	}
+
+	id := c.ID
+	if len(id) > 12 {
+		id = id[:12]
+	}
+
+	stat := ContainerStat{
+		ContainerID:   id,
+		Timestamp:     time.Now(),
+		CPUPercent:    cpuPercent,
+		MemoryUsage:   uint64(memUsage),
+		MemoryLimit:   uint64(memLimit),
+		MemoryPercent: memPercent,
+		NetworkRx:     rx,
+		NetworkTx:     tx,
+		BlockRead:     blkRead,
+		BlockWrite:    blkWrite,
+	}
+
+	if err := database.DB.Create(&stat).Error; err != nil {
+		log.Printf("Failed to save container metrics: %v", err)
+	}
 }

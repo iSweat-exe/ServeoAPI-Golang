@@ -9,6 +9,7 @@ import (
 
 	"serveoapi/internal/core/contextkeys"
 	"serveoapi/internal/core/response"
+	"serveoapi/internal/modules/v2/common"
 	"gorm.io/gorm"
 )
 
@@ -100,9 +101,8 @@ func (h *Handler) CreateApiKey(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {array}   ApiKeyResponse
 // @Router       /v2/apikeys/ [get]
 func (h *Handler) ListApiKeys(w http.ResponseWriter, r *http.Request) {
-	userID, ok := contextkeys.GetUserID(r.Context())
+	userID, ok := common.GetUserIDOrUnauthorized(w, r)
 	if !ok {
-		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -135,9 +135,8 @@ func (h *Handler) ListApiKeys(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  map[string]string
 // @Router       /v2/apikeys/{id} [delete]
 func (h *Handler) RevokeApiKey(w http.ResponseWriter, r *http.Request) {
-	userID, ok := contextkeys.GetUserID(r.Context())
+	userID, ok := common.GetUserIDOrUnauthorized(w, r)
 	if !ok {
-		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 

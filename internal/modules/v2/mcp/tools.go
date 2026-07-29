@@ -60,7 +60,13 @@ func registerTools(cfg *config.Config) {
 	initClients(cfg)
 	loadCooldowns()
 
-	// 1. docker_list
+	registerDockerListTool()
+	registerDockerLogsTool()
+	registerFileReadTool(cfg)
+	registerOvhRebootTool()
+}
+
+func registerDockerListTool() {
 	mcpServer.AddTool(mcp.NewTool("docker_list",
 		mcp.WithDescription("List all docker containers with their statuses"),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -88,8 +94,9 @@ func registerTools(cfg *config.Config) {
 
 		return mcp.NewToolResultText(result), nil
 	})
+}
 
-	// 2. docker_logs
+func registerDockerLogsTool() {
 	mcpServer.AddTool(mcp.NewTool("docker_logs",
 		mcp.WithDescription("Read the recent logs of a docker container"),
 		mcp.WithString("container_name", mcp.Required()),
@@ -122,8 +129,9 @@ func registerTools(cfg *config.Config) {
 
 		return mcp.NewToolResultText(string(logsBytes)), nil
 	})
+}
 
-	// 3. file_read
+func registerFileReadTool(cfg *config.Config) {
 	mcpServer.AddTool(mcp.NewTool("file_read",
 		mcp.WithDescription("Read a file inside a container's persistent data directory"),
 		mcp.WithString("container_name", mcp.Required()),
@@ -162,8 +170,9 @@ func registerTools(cfg *config.Config) {
 
 		return mcp.NewToolResultText(string(content)), nil
 	})
+}
 
-	// 4. ovh_reboot
+func registerOvhRebootTool() {
 	mcpServer.AddTool(mcp.NewTool("ovh_reboot",
 		mcp.WithDescription("Hard reboot an OVHcloud dedicated server"),
 		mcp.WithString("service_name", mcp.Required()),
@@ -183,7 +192,6 @@ func registerTools(cfg *config.Config) {
 		}
 		serviceName, _ := args["service_name"].(string)
 
-		// Vérification du délai d'attente (15m)
 		cooldownMutex.Lock()
 		lastReboot, exists := lastRebootMap[serviceName]
 		cooldownMutex.Unlock()
@@ -192,7 +200,6 @@ func registerTools(cfg *config.Config) {
 			return mcp.NewToolResultError("cooldown active: cannot reboot this server again so soon"), nil
 		}
 
-		// Effectuer le redémarrage via OVH
 		err := ovhClient.Post(fmt.Sprintf("/dedicated/server/%s/reboot", serviceName), nil, nil)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to reboot server: %v", err)), nil

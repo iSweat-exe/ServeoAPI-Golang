@@ -83,6 +83,15 @@ func (h *Handler) CreateBackup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) getServerNameOrError(w http.ResponseWriter, r *http.Request) (string, bool) {
+	server := r.PathValue("server")
+	if strings.Contains(server, "/") || strings.Contains(server, "\\") || server == ".." {
+		response.SendError(w, http.StatusBadRequest, "Invalid server name")
+		return "", false
+	}
+	return server, true
+}
+
 // ListBackups godoc
 // @Summary      List Server Backups
 // @Description  Lists available backups for a server
@@ -93,9 +102,8 @@ func (h *Handler) CreateBackup(w http.ResponseWriter, r *http.Request) {
 // @Success      200      {array}   BackupInfo
 // @Router       /v2/backups/{server} [get]
 func (h *Handler) ListBackups(w http.ResponseWriter, r *http.Request) {
-	server := r.PathValue("server")
-	if strings.Contains(server, "/") || strings.Contains(server, "\\") || server == ".." {
-		response.SendError(w, http.StatusBadRequest, "Invalid server name")
+	server, ok := h.getServerNameOrError(w, r)
+	if !ok {
 		return
 	}
 
@@ -145,9 +153,8 @@ type RestoreRequest struct {
 // @Failure      400,404,500 {string} string
 // @Router       /v2/backups/{server}/restore [post]
 func (h *Handler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
-	server := r.PathValue("server")
-	if strings.Contains(server, "/") || strings.Contains(server, "\\") || server == ".." {
-		response.SendError(w, http.StatusBadRequest, "Invalid server name")
+	server, ok := h.getServerNameOrError(w, r)
+	if !ok {
 		return
 	}
 

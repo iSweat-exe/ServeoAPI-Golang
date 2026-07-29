@@ -103,9 +103,7 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// Fonction utilitaire pour écrire les modèles par défaut
-func writeDefaultTemplates(path string) {
-	defaults := map[string]string{
+var defaultTemplates = map[string]string{
 		"minecraft.json": `{
 			"id": "minecraft",
 			"name": "Minecraft Server",
@@ -277,7 +275,9 @@ func writeDefaultTemplates(path string) {
 		}`,
 	}
 
-	for name, content := range defaults {
+// Fonction utilitaire pour écrire les modèles par défaut
+func writeDefaultTemplates(path string) {
+	for name, content := range defaultTemplates {
 		os.WriteFile(filepath.Join(path, name), []byte(content), 0644)
 	}
 }

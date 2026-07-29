@@ -115,6 +115,15 @@ func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	response.SendJSON(w, http.StatusOK, fileList)
 }
 
+func (h *Handler) withSafeRoot(w http.ResponseWriter, r *http.Request, fn func(*os.Root, string)) {
+	root, reqPath, ok := h.resolveSafeRoot(w, r)
+	if !ok {
+		return
+	}
+	defer root.Close()
+	fn(root, reqPath)
+}
+
 // ReadFile godoc
 // @Summary      Read File
 // @Description  Returns the content of a file
@@ -125,27 +134,17 @@ func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative path to file"
 // @Router       /v2/files/{server}/read [get]
 func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := h.resolveSafeRoot(w, r)
-	if !ok {
-		return
-	}
-	defer root.Close()
+	h.withSafeRoot(w, r, func(root *os.Root, reqPath string) {
+		f, err := root.OpenFile(reqPath, os.O_RDONLY, 0)
+		if err != nil {
+			response.SendError(w, http.StatusNotFound, "File not found or cannot be read")
+			return
+		}
+		defer f.Close()
 
-	// Ouverture atomique protégée contre les attaques par liens symboliques (symlink races)
-	f, err := root.OpenFile(reqPath, os.O_RDONLY, 0)
-	if err != nil {
-		response.SendError(w, http.StatusNotFound, "File not found or cannot be read")
-		return
-	}
-	defer f.Close()
-
-	info, err := f.Stat()
-	if err != nil || info.IsDir() {
-		response.SendError(w, http.StatusBadRequest, "Invalid file")
-		return
-	}
-
-	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
+		w.Header().Set("Content-Type", "application/octet-stream")
+		io.Copy(w, f)
+	})
 }
 
 // WriteFile godoc
@@ -159,26 +158,21 @@ func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative path to file"
 // @Router       /v2/files/{server}/write [post]
 func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := h.resolveSafeRoot(w, r)
-	if !ok {
-		return
-	}
-	defer root.Close()
+	h.withSafeRoot(w, r, func(root *os.Root, reqPath string) {
+		f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			response.SendError(w, http.StatusInternalServerError, "Failed to open file for writing")
+			return
+		}
+		defer f.Close()
 
-	// Ouverture atomique protégée contre les attaques par liens symboliques (O_TRUNC implique une modification)
-	f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Cannot open file for writing: "+err.Error())
-		return
-	}
-	defer f.Close()
+		if _, err := io.Copy(f, r.Body); err != nil {
+			response.SendError(w, http.StatusInternalServerError, "Failed to write content")
+			return
+		}
 
-	if _, err := io.Copy(f, r.Body); err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Error writing file")
-		return
-	}
-
-	response.SendJSON(w, http.StatusOK, map[string]string{"message": "File saved successfully"})
+		response.SendJSON(w, http.StatusOK, map[string]string{"message": "File written"})
+	})
 }
 
 // UploadFile godoc
@@ -247,22 +241,17 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 // @Param        path query string true "Relative path to file or directory"
 // @Router       /v2/files/{server}/delete [delete]
 func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	root, reqPath, ok := h.resolveSafeRoot(w, r)
-	if !ok {
-		return
-	}
-	defer root.Close()
+	h.withSafeRoot(w, r, func(root *os.Root, reqPath string) {
+		if reqPath == "." {
+			response.SendError(w, http.StatusForbidden, "Cannot delete root directory")
+			return
+		}
 
-	if reqPath == "." || reqPath == "/" {
-		response.SendError(w, http.StatusForbidden, "Cannot delete root directory")
-		return
-	}
+		if err := root.Remove(reqPath); err != nil {
+			response.SendError(w, http.StatusInternalServerError, "Failed to delete file/folder")
+			return
+		}
 
-	// Suppression récursive atomique protégée contre les vulnérabilités TOCTOU
-	if err := root.RemoveAll(reqPath); err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Cannot delete file: "+err.Error())
-		return
-	}
-
-	response.SendJSON(w, http.StatusOK, map[string]string{"message": "File deleted successfully"})
+		response.SendJSON(w, http.StatusOK, map[string]string{"message": "Deleted"})
+	})
 }

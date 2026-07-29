@@ -12,8 +12,12 @@ func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.H
 	mux.Handle("GET /v2/users/me", authMiddleware(http.HandlerFunc(h.GetMe)))
 	mux.Handle("PUT /v2/users/me/password", authMiddleware(http.HandlerFunc(h.UpdateMePassword)))
 
-	mux.Handle("POST /v2/users/", authMiddleware(middleware.RequirePermission("users.manage", http.HandlerFunc(h.CreateUser))))
-	mux.Handle("GET /v2/users/", authMiddleware(middleware.RequirePermission("users.manage", http.HandlerFunc(h.GetUsers))))
-	mux.Handle("PATCH /v2/users/{id}", authMiddleware(middleware.RequirePermission("users.manage", http.HandlerFunc(h.UpdateUser))))
-	mux.Handle("DELETE /v2/users/{id}", authMiddleware(middleware.RequirePermission("users.manage", http.HandlerFunc(h.DeleteUser))))
+	registerRoute := func(methodPath string, handler http.HandlerFunc) {
+		mux.Handle(methodPath, authMiddleware(middleware.RequirePermission("users.manage", handler)))
+	}
+
+	registerRoute("POST /v2/users/", h.CreateUser)
+	registerRoute("GET /v2/users/", h.GetUsers)
+	registerRoute("PATCH /v2/users/{id}", h.UpdateUser)
+	registerRoute("DELETE /v2/users/{id}", h.DeleteUser)
 }

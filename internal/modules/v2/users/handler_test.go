@@ -14,7 +14,7 @@ import (
 	"serveoapi/internal/testutil"
 )
 
-func TestGetMe_Success(t *testing.T) {
+func TestGetMeSuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&auth.User{})
 	require.NoError(t, err)
 
@@ -39,7 +39,7 @@ func TestGetMe_Success(t *testing.T) {
 	assert.Equal(t, "testuser", response.Username)
 }
 
-func TestUpdateMePassword_Success(t *testing.T) {
+func TestUpdateMePasswordSuccess(t *testing.T) {
 	db, err := testutil.SetupTestDB(&auth.User{})
 	require.NoError(t, err)
 
@@ -74,7 +74,7 @@ func TestUpdateMePassword_Success(t *testing.T) {
 	assert.NoError(t, updatedUser.CheckPassword("newpassword123"))
 }
 
-func TestUpdateMePassword_InvalidInput(t *testing.T) {
+func TestUpdateMePasswordInvalidInput(t *testing.T) {
 	db, err := testutil.SetupTestDB(&auth.User{})
 	require.NoError(t, err)
 

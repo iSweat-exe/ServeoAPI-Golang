@@ -12,7 +12,7 @@ import (
 	"serveoapi/internal/testutil"
 )
 
-func TestGetMetadata_Success(t *testing.T) {
+func TestGetMetadataSuccess(t *testing.T) {
 	// Metadata has no DB dependency, we can pass nil or an empty db
 	db, err := testutil.SetupTestDB()
 	require.NoError(t, err)

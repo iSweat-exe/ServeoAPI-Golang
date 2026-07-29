@@ -10,6 +10,10 @@ import (
 func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler) {
 	h := &Handler{}
 
-	mux.Handle("GET /v2/metrics/history/containers/{id}", authMiddleware(middleware.RequirePermission("metrics.read", http.HandlerFunc(h.GetContainerMetricsHistory))))
-	mux.Handle("GET /v2/metrics/history/system", authMiddleware(middleware.RequirePermission("metrics.read", http.HandlerFunc(h.GetSystemMetricsHistory))))
+	registerRoute := func(methodPath, perm string, handler http.HandlerFunc) {
+		mux.Handle(methodPath, authMiddleware(middleware.RequirePermission(perm, handler)))
+	}
+
+	registerRoute("GET /v2/metrics/history/containers/{id}", "metrics.read", h.GetContainerMetricsHistory)
+	registerRoute("GET /v2/metrics/history/system", "metrics.read", h.GetSystemMetricsHistory)
 }

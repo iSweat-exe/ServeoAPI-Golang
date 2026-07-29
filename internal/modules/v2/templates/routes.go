@@ -12,6 +12,8 @@ import (
 func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB, cfg *config.Config) {
 	h := &Handler{DB: db, Config: cfg}
 	// Nécessite la permission 'templates.read'
-	mux.Handle("GET /v2/templates/", authMiddleware(middleware.RequirePermission("templates.read", http.HandlerFunc(h.GetTemplates))))
-	mux.Handle("GET /v2/templates/{id}", authMiddleware(middleware.RequirePermission("templates.read", http.HandlerFunc(h.GetTemplate))))
+	mux.Handle("GET /v2/templates/", authMiddleware(
+		middleware.RequirePermission("templates.read", http.HandlerFunc(h.GetTemplates))))
+	mux.Handle("GET /v2/templates/{id}", authMiddleware(
+		middleware.RequirePermission("templates.read", http.HandlerFunc(h.GetTemplate))))
 }
