@@ -12,7 +12,7 @@ func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.H
 	mux.Handle("GET /v2/docker/containers/{id}", authMiddleware(middleware.RequirePermission("docker.containers.read", http.HandlerFunc(InspectContainer))))
 	mux.Handle("POST /v2/docker/containers/{id}/{action}", authMiddleware(middleware.RequirePermission("docker.containers.write", http.HandlerFunc(ActionContainer))))
 	mux.Handle("DELETE /v2/docker/containers/{id}", authMiddleware(middleware.RequirePermission("docker.containers.delete", http.HandlerFunc(DeleteContainer))))
-	
+
 	// Terminal (Interactive WebSockets, Auth is handled inside the WS)
 	mux.Handle("GET /v2/docker/containers/{id}/exec", http.HandlerFunc(TerminalHandler))
 
@@ -39,7 +39,7 @@ func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.H
 	mux.Handle("GET /v2/docker/networks/", authMiddleware(middleware.RequirePermission("docker.networks.read", http.HandlerFunc(GetNetworks))))
 	mux.Handle("POST /v2/docker/networks/", authMiddleware(middleware.RequirePermission("docker.networks.write", http.HandlerFunc(CreateNetwork))))
 	mux.Handle("DELETE /v2/docker/networks/{id}", authMiddleware(middleware.RequirePermission("docker.networks.delete", http.HandlerFunc(DeleteNetwork))))
-	
+
 	// Docker Compose
 	mux.Handle("POST /v2/docker/compose/deploy", authMiddleware(middleware.RequirePermission("docker.compose.write", http.HandlerFunc(DeployStack))))
 }

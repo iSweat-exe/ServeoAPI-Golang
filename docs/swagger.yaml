@@ -1,5 +1,33 @@
 basePath: /
 definitions:
+  apikeys.ApiKeyResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      prefix:
+        type: string
+    type: object
+  apikeys.CreateApiKeyRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  apikeys.CreateApiKeyResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      token:
+        description: Only shown once during creation
+        type: string
+    type: object
   auth.LoginRequest:
     properties:
       password:
@@ -133,6 +161,20 @@ definitions:
         type: string
       name:
         type: string
+    type: object
+  files.FileInfo:
+    properties:
+      is_dir:
+        type: boolean
+      mod_time:
+        type: string
+      name:
+        type: string
+      path:
+        description: relative path to the root
+        type: string
+      size:
+        type: integer
     type: object
   metadata.MetadataResponse:
     properties:
@@ -291,6 +333,70 @@ info:
   title: ServeoAPI
   version: "2.0"
 paths:
+  /v2/apikeys/:
+    get:
+      description: Get all API Keys for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/apikeys.ApiKeyResponse'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List API Keys
+      tags:
+      - apikeys
+  /v2/apikeys/{id}:
+    delete:
+      description: Delete an API Key
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke API Key
+      tags:
+      - apikeys
+  /v2/apikeys/create:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new Personal Access Token (PAT) for AIs
+      parameters:
+      - description: Key details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/apikeys.CreateApiKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/apikeys.CreateApiKeyResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create API Key
+      tags:
+      - apikeys
   /v2/auth/login:
     post:
       consumes:
@@ -796,6 +902,127 @@ paths:
       summary: Delete a Docker Volume
       tags:
       - docker-volumes
+  /v2/files/{server}/delete:
+    delete:
+      description: Deletes a file or directory
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative path to file or directory
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete File
+      tags:
+      - files
+  /v2/files/{server}/list:
+    get:
+      consumes:
+      - application/json
+      description: List files and directories in a given path
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative path
+        in: query
+        name: path
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/files.FileInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Files
+      tags:
+      - files
+  /v2/files/{server}/read:
+    get:
+      description: Returns the content of a file
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative path to file
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Read File
+      tags:
+      - files
+  /v2/files/{server}/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a binary file using multipart/form-data
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative destination directory path
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Upload File
+      tags:
+      - files
+  /v2/files/{server}/write:
+    post:
+      consumes:
+      - text/plain
+      description: Writes raw text content to a file
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative path to file
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Write File
+      tags:
+      - files
   /v2/metadata/:
     get:
       consumes:

@@ -33,7 +33,7 @@ func RequirePermission(requiredPerm string, next http.Handler) http.Handler {
 				hasAccess = true
 				break
 			}
-			
+
 			// Optional: support wildcards like "docker.containers.*"
 			if strings.HasSuffix(p, ".*") {
 				prefix := strings.TrimSuffix(p, ".*")

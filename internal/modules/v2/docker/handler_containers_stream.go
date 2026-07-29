@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"serveoapi/internal/core/stream"
 )
 
@@ -21,12 +20,7 @@ import (
 // @Router       /v2/docker/containers/{id}/logs [get]
 func StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	options := container.LogsOptions{
 		ShowStdout: true,
@@ -72,12 +66,7 @@ func StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
 // @Router       /v2/docker/containers/{id}/stats [get]
 func StreamContainerStats(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	statsResponse, err := cli.ContainerStats(r.Context(), id, true)
 	if err != nil {

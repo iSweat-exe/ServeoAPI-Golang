@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
 )
 
 // GetVolumes godoc
@@ -18,12 +17,7 @@ import (
 // @Success      200  {array}   VolumeInfo
 // @Router       /v2/docker/volumes/ [get]
 func GetVolumes(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	volumes, err := cli.VolumeList(context.Background(), volume.ListOptions{})
 	if err != nil {
@@ -61,14 +55,9 @@ func DeleteVolume(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	force := r.URL.Query().Get("force") == "true"
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
-	err = cli.VolumeRemove(context.Background(), name, force)
+	err := cli.VolumeRemove(context.Background(), name, force)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,12 +90,7 @@ func CreateVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, "Error connecting to docker", http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	if req.Driver == "" {
 		req.Driver = "local"

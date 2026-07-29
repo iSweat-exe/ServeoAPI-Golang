@@ -93,7 +93,7 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 	// 2. Write YAML to a temporary file
 	tmpDir := os.TempDir()
 	fileName := filepath.Join(tmpDir, "serveo_stack_"+req.Name+"_"+time.Now().Format("20060102150405")+".yml")
-	
+
 	if err := os.WriteFile(fileName, []byte(req.Content), 0644); err != nil {
 		http.Error(w, "Failed to write temp compose file", http.StatusInternalServerError)
 		return

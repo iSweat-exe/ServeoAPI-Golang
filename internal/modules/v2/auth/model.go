@@ -12,11 +12,11 @@ import (
 type User struct {
 	gorm.Model
 	Username       string `gorm:"uniqueIndex;not null" json:"username"`
-	Password       string `gorm:"not null" json:"-"` // Le hash du mot de passe
-	Permissions    string `gorm:"type:text" json:"permissions"` // Permissions séparées par des virgules
+	Password       string `gorm:"not null" json:"-"`                // Le hash du mot de passe
+	Permissions    string `gorm:"type:text" json:"permissions"`     // Permissions séparées par des virgules
 	ProfilePicture string `gorm:"type:text" json:"profile_picture"` // URL ou chemin de l'image
-	Status         string `gorm:"default:'offline'" json:"status"` // online, offline, away
-	LastConnection *int64 `json:"last_connection"` // Timestamp UNIX
+	Status         string `gorm:"default:'offline'" json:"status"`  // online, offline, away
+	LastConnection *int64 `json:"last_connection"`                  // Timestamp UNIX
 }
 
 // CheckPassword vérifie si le mot de passe fourni correspond au hash.

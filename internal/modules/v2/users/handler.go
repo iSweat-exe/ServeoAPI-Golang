@@ -170,7 +170,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	database.DB.Delete(&auth.User{}, id)
 	w.WriteHeader(http.StatusNoContent)
 }

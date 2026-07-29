@@ -7,6 +7,7 @@ import (
 	"serveoapi/internal/core/database"
 	"serveoapi/internal/core/server"
 	"serveoapi/internal/core/updater"
+	"serveoapi/internal/modules/v2/apikeys"
 	"serveoapi/internal/modules/v2/auth"
 	"serveoapi/internal/router"
 )
@@ -44,7 +45,10 @@ func main() {
 		log.Fatalf("Impossible d'initialiser la base de données: %v", err)
 	}
 	if err := auth.MigrateDatabase(); err != nil {
-		log.Fatalf("Impossible de migrer la base de données Auth: %v", err)
+		log.Fatalf("Failed to migrate Auth database: %v", err)
+	}
+	if err := apikeys.MigrateDatabase(); err != nil {
+		log.Fatalf("Failed to migrate ApiKeys database: %v", err)
 	}
 
 	// Create HTTP router

@@ -7,7 +7,6 @@ import (
 
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 	"serveoapi/internal/core/stream"
 )
 
@@ -20,12 +19,7 @@ import (
 // @Success      200  {object}  SystemInfo
 // @Router       /v2/docker/system/info [get]
 func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	info, err := cli.Info(context.Background())
 	if err != nil {
@@ -55,16 +49,11 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 // @Success      204
 // @Router       /v2/docker/system/prune [post]
 func PruneSystem(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	// Pruning everything (images, containers, volumes, networks) requires separate calls in SDK
 	// This acts as a basic container prune for demonstration
-	_, err = cli.ContainersPrune(context.Background(), filters.NewArgs())
+	_, err := cli.ContainersPrune(context.Background(), filters.NewArgs())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,15 +71,10 @@ func PruneSystem(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {string}  string "Event Stream"
 // @Router       /v2/docker/system/events [get]
 func StreamSystemEvents(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	msgs, errs := cli.Events(r.Context(), events.ListOptions{})
-	
+
 	stream.SetupSSEHeaders(w)
 
 	for {

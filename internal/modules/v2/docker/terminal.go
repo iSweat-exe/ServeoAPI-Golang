@@ -3,18 +3,16 @@ package docker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"serveoapi/internal/core/middleware"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
-
-	"serveoapi/internal/modules/v2/auth"
 )
 
 var upgrader = websocket.Upgrader{
@@ -37,30 +35,21 @@ type TerminalControlMessage struct {
 
 // checkPermission from JWT claims
 func hasContainerWritePermission(tokenString string) bool {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method")
-		}
-		return auth.JwtSecretKey, nil
-	})
-
-	if err != nil || !token.Valid {
+	_, permissions, err := middleware.ValidateToken(tokenString)
+	if err != nil {
 		return false
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		permissions, _ := claims["permissions"].(string)
-		perms := strings.Split(permissions, ",")
-		for _, p := range perms {
-			p = strings.TrimSpace(p)
-			if p == "*" || p == "docker.containers.write" {
+	perms := strings.Split(permissions, ",")
+	for _, p := range perms {
+		p = strings.TrimSpace(p)
+		if p == "*" || p == "docker.containers.write" {
+			return true
+		}
+		if strings.HasSuffix(p, ".*") {
+			prefix := strings.TrimSuffix(p, ".*")
+			if strings.HasPrefix("docker.containers.write", prefix+".") {
 				return true
-			}
-			if strings.HasSuffix(p, ".*") {
-				prefix := strings.TrimSuffix(p, ".*")
-				if strings.HasPrefix("docker.containers.write", prefix+".") {
-					return true
-				}
 			}
 		}
 	}
@@ -148,12 +137,7 @@ func TerminalHandler(w http.ResponseWriter, r *http.Request) {
 	ws.SetReadDeadline(time.Time{})
 
 	// 2. Initialize Docker Client
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(1011, "Docker client error"), time.Now().Add(time.Second))
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	// 3. Probe Shell
 	ctx, cancel := context.WithCancel(r.Context())
@@ -182,7 +166,7 @@ func TerminalHandler(w http.ResponseWriter, r *http.Request) {
 		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(1011, "Exec attach failed"), time.Now().Add(time.Second))
 		return
 	}
-	
+
 	// CRITICAL: Cleanup to prevent resource leaks
 	// If the handler exits, everything is closed.
 	defer hijackedResp.Close()

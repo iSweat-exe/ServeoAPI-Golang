@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"serveoapi/internal/core/stream"
 )
 
@@ -21,12 +20,7 @@ import (
 // @Success      200  {array}   ImageInfo
 // @Router       /v2/docker/images/ [get]
 func GetImages(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	images, err := cli.ImageList(context.Background(), image.ListOptions{All: false})
 	if err != nil {
@@ -74,12 +68,7 @@ func PullImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	out, err := cli.ImagePull(r.Context(), req.Image, image.PullOptions{})
 	if err != nil {
@@ -113,14 +102,9 @@ func DeleteImage(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	force := r.URL.Query().Get("force") == "true"
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
-	_, err = cli.ImageRemove(context.Background(), id, image.RemoveOptions{
+	_, err := cli.ImageRemove(context.Background(), id, image.RemoveOptions{
 		Force: force,
 	})
 	if err != nil {

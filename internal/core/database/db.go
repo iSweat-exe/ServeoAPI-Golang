@@ -20,6 +20,9 @@ func InitDatabase(dbPath string) error {
 		return err
 	}
 
+	// Enable WAL mode for concurrency
+	DB.Exec("PRAGMA journal_mode=WAL;")
+
 	log.Println("Database connection successfully established.")
 	return nil
 }

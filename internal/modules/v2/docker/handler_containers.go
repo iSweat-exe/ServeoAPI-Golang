@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"strings"
 
@@ -23,12 +22,7 @@ import (
 // @Success      200  {array}   ContainerInfo
 // @Router       /v2/docker/containers/ [get]
 func GetContainers(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, "Failed to connect to Docker daemon: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
@@ -70,12 +64,7 @@ func GetContainers(w http.ResponseWriter, r *http.Request) {
 // @Router       /v2/docker/containers/{id} [get]
 func InspectContainer(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	info, err := cli.ContainerInspect(context.Background(), id)
 	if err != nil {
@@ -100,12 +89,8 @@ func ActionContainer(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	action := r.PathValue("action")
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
+	var err error
 
 	ctx := context.Background()
 	switch action {
@@ -141,14 +126,9 @@ func DeleteContainer(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	force := r.URL.Query().Get("force") == "true"
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
-	err = cli.ContainerRemove(context.Background(), id, container.RemoveOptions{
+	err := cli.ContainerRemove(context.Background(), id, container.RemoveOptions{
 		Force:         force,
 		RemoveVolumes: false,
 	})
@@ -187,12 +167,7 @@ func CreateContainer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, "Error connecting to docker", http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	// 1. Security check for Volumes (Bind Mounts)
 	cfg := config.Load()
@@ -203,7 +178,7 @@ func CreateContainer(w http.ResponseWriter, r *http.Request) {
 	for _, v := range req.Volumes {
 		parts := strings.SplitN(v, ":", 2)
 		src := parts[0]
-		
+
 		// If it's a bind mount (contains slash), verify it starts with AllowedMountRoot
 		if strings.Contains(src, "/") || strings.Contains(src, "\\") {
 			// Resolve to absolute path to prevent ../ bypasses

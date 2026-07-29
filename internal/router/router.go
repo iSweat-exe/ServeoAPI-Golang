@@ -7,8 +7,11 @@ import (
 
 	_ "serveoapi/docs" // Swagger generated docs
 	"serveoapi/internal/core/middleware"
+	"serveoapi/internal/modules/v2/apikeys"
 	"serveoapi/internal/modules/v2/auth"
 	"serveoapi/internal/modules/v2/docker"
+	"serveoapi/internal/modules/v2/files"
+	"serveoapi/internal/modules/v2/mcp"
 	"serveoapi/internal/modules/v2/metadata"
 	"serveoapi/internal/modules/v2/ovh"
 	"serveoapi/internal/modules/v2/system"
@@ -35,9 +38,18 @@ func New() http.Handler {
 	metadata.RegisterRoutes(mux, authMiddleware)
 	system.RegisterRoutes(mux, authMiddleware)
 	docker.RegisterRoutes(mux, authMiddleware)
+	files.RegisterRoutes(mux, authMiddleware)
 	users.RegisterRoutes(mux, authMiddleware)
 	templates.RegisterRoutes(mux, authMiddleware)
 	ovh.RegisterRoutes(mux, authMiddleware)
+	mcp.RegisterRoutes(mux, authMiddleware)
+	apikeys.RegisterRoutes(mux, authMiddleware)
+
+	// Serve AI Skills definitions
+	mux.HandleFunc("GET /skills.md", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		http.ServeFile(w, r, "skills.md")
+	})
 
 	// Apply Global Middlewares (RateLimit, CORS, Logger)
 	handler := middleware.RateLimit(mux)

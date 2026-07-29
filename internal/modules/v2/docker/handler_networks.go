@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
 )
 
 // GetNetworks godoc
@@ -18,12 +17,7 @@ import (
 // @Success      200  {array}   NetworkInfo
 // @Router       /v2/docker/networks/ [get]
 func GetNetworks(w http.ResponseWriter, r *http.Request) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	networks, err := cli.NetworkList(context.Background(), network.ListOptions{})
 	if err != nil {
@@ -63,14 +57,9 @@ func GetNetworks(w http.ResponseWriter, r *http.Request) {
 func DeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
-	err = cli.NetworkRemove(context.Background(), id)
+	err := cli.NetworkRemove(context.Background(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,12 +92,7 @@ func CreateNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		http.Error(w, "Error connecting to docker", http.StatusInternalServerError)
-		return
-	}
-	defer cli.Close()
+	cli := GetClient()
 
 	if req.Driver == "" {
 		req.Driver = "bridge"

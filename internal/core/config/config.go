@@ -14,7 +14,7 @@ type Config struct {
 	AllowedMountRoot string
 	TemplatesPath    string
 	APIToken         string
-	
+
 	// OVH Cloud
 	OvhEndpoint    string
 	OvhAppKey      string
@@ -73,4 +73,3 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
-
