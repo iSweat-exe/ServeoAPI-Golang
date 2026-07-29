@@ -1,0 +1,930 @@
+basePath: /
+definitions:
+  auth.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  auth.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  docker.ContainerInfo:
+    properties:
+      id:
+        type: string
+      image:
+        type: string
+      names:
+        items:
+          type: string
+        type: array
+      state:
+        type: string
+      status:
+        type: string
+    type: object
+  docker.CreateContainerRequest:
+    properties:
+      env:
+        items:
+          type: string
+        type: array
+      image:
+        type: string
+      name:
+        type: string
+      ports:
+        additionalProperties:
+          type: string
+        description: 'e.g. {"8080": "80"}'
+        type: object
+      restart_policy:
+        type: string
+      volumes:
+        description: e.g. ["myvol:/data", "/var/serveoapi/data/app:/app"]
+        items:
+          type: string
+        type: array
+    type: object
+  docker.CreateNetworkRequest:
+    properties:
+      driver:
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+    type: object
+  docker.CreateVolumeRequest:
+    properties:
+      driver:
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+    type: object
+  docker.DeployStackRequest:
+    properties:
+      content:
+        description: Raw YAML content
+        type: string
+      name:
+        type: string
+    type: object
+  docker.ImageInfo:
+    properties:
+      created:
+        type: integer
+      id:
+        type: string
+      repo_tags:
+        items:
+          type: string
+        type: array
+      size:
+        type: integer
+    type: object
+  docker.NetworkInfo:
+    properties:
+      driver:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  docker.PullImageRequest:
+    properties:
+      image:
+        description: 'ex: "nginx:latest"'
+        type: string
+    type: object
+  docker.SystemInfo:
+    properties:
+      containers:
+        type: integer
+      containers_running:
+        type: integer
+      containers_stopped:
+        type: integer
+      images:
+        type: integer
+      mem_total:
+        type: integer
+      ncpu:
+        type: integer
+      server_version:
+        type: string
+    type: object
+  docker.VolumeInfo:
+    properties:
+      driver:
+        type: string
+      mountpoint:
+        type: string
+      name:
+        type: string
+    type: object
+  metadata.MetadataResponse:
+    properties:
+      api_version:
+        type: string
+      author:
+        type: string
+      commit_hash:
+        type: string
+      deprecated:
+        type: boolean
+      deprecation_info:
+        type: string
+      github_link:
+        type: string
+      go_version:
+        type: string
+      protocol_version:
+        type: integer
+    type: object
+  system.SystemResponse:
+    properties:
+      arch:
+        type: string
+      cpu_usage:
+        type: number
+      disk_total:
+        type: integer
+      disk_used:
+        type: integer
+      hostname:
+        type: string
+      kernel_version:
+        type: string
+      network_rx:
+        type: integer
+      network_tx:
+        type: integer
+      os:
+        type: string
+      ping:
+        type: string
+      platform:
+        type: string
+      ram_total:
+        type: integer
+      ram_used:
+        type: integer
+      uptime:
+        type: integer
+    type: object
+  users.CreateUserRequest:
+    properties:
+      password:
+        type: string
+      permissions:
+        type: string
+      profile_picture:
+        type: string
+      username:
+        type: string
+    type: object
+  users.UpdatePasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
+  users.UpdateUserRequest:
+    properties:
+      permissions:
+        type: string
+      profile_picture:
+        type: string
+      status:
+        description: allow banning or forcing offline
+        type: string
+    type: object
+  users.UserResponse:
+    properties:
+      id:
+        type: integer
+      last_connection:
+        type: integer
+      permissions:
+        type: string
+      profile_picture:
+        type: string
+      status:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the modular ServeoAPI management server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: ServeoAPI
+  version: "2.0"
+paths:
+  /v2/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            type: string
+      summary: Login to the API
+      tags:
+      - auth
+  /v2/auth/logout:
+    post:
+      description: Sets the user status to offline
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Logout from the API
+      tags:
+      - auth
+  /v2/docker/compose/deploy:
+    post:
+      consumes:
+      - application/json
+      description: Deploys a stack from a docker-compose.yml file. Strict security
+        checks applied to volumes.
+      parameters:
+      - description: Stack details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/docker.DeployStackRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Stack deployed successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Deploy a Docker Compose Stack
+      tags:
+      - docker-compose
+  /v2/docker/containers/:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all docker containers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/docker.ContainerInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Docker Containers
+      tags:
+      - docker-containers
+  /v2/docker/containers/{id}:
+    delete:
+      description: Removes a container. Pass ?force=true to force removal of a running
+        container.
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Force remove
+        in: query
+        name: force
+        type: boolean
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a Docker Container
+      tags:
+      - docker-containers
+    get:
+      description: Returns detailed information about a container
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Inspect a Docker Container
+      tags:
+      - docker-containers
+  /v2/docker/containers/{id}/{action}:
+    post:
+      description: 'Action must be one of: start, stop, restart'
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Action to perform (start, stop, restart)
+        in: path
+        name: action
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Perform action on a container (start, stop, restart)
+      tags:
+      - docker-containers
+  /v2/docker/containers/{id}/exec:
+    get:
+      description: 'Upgrades connection to a WebSocket. Expects first message: {"type":
+        "auth", "token": "JWT"}. Subsequent JSON messages for input/resize. Outputs
+        raw binary frames.'
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "101":
+          description: Switching Protocols to WebSocket
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Interactive Docker Terminal (WebSocket)
+      tags:
+      - docker
+  /v2/docker/containers/{id}/logs:
+    get:
+      description: Streams logs of a container using Server-Sent Events
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: Event Stream
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Stream Container Logs (SSE)
+      tags:
+      - docker-containers
+  /v2/docker/containers/{id}/stats:
+    get:
+      description: Streams CPU/RAM stats of a container using Server-Sent Events
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: Event Stream
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Stream Container Stats (SSE)
+      tags:
+      - docker-containers
+  /v2/docker/containers/create:
+    post:
+      consumes:
+      - application/json
+      description: Deploys a new container. Bind mounts are strictly restricted for
+        security.
+      parameters:
+      - description: Container configuration
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/docker.CreateContainerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/docker.ContainerInfo'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create and Start a Docker Container
+      tags:
+      - docker-containers
+  /v2/docker/images/:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all docker images
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/docker.ImageInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Docker Images
+      tags:
+      - docker-images
+  /v2/docker/images/{id}:
+    delete:
+      description: Removes an image
+      parameters:
+      - description: Image ID or Tag
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Force remove
+        in: query
+        name: force
+        type: boolean
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a Docker Image
+      tags:
+      - docker-images
+  /v2/docker/images/pull:
+    post:
+      consumes:
+      - application/json
+      description: Pulls an image and streams progress using Server-Sent Events
+      parameters:
+      - description: Image to pull
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/docker.PullImageRequest'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: Event Stream
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Pull Docker Image (SSE)
+      tags:
+      - docker-images
+  /v2/docker/networks/:
+    get:
+      description: Returns a list of all networks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/docker.NetworkInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Docker Networks
+      tags:
+      - docker-networks
+    post:
+      consumes:
+      - application/json
+      description: Create a new Docker network manually
+      parameters:
+      - description: Network details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/docker.CreateNetworkRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/docker.NetworkInfo'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create a Docker Network
+      tags:
+      - networks
+  /v2/docker/networks/{id}:
+    delete:
+      description: Removes a network by ID
+      parameters:
+      - description: Network ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a Docker Network
+      tags:
+      - docker-networks
+  /v2/docker/system/events:
+    get:
+      description: Streams real-time events from the server
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: Event Stream
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Stream Docker Events (SSE)
+      tags:
+      - docker-system
+  /v2/docker/system/info:
+    get:
+      description: Returns system-wide information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/docker.SystemInfo'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Docker System Info
+      tags:
+      - docker-system
+  /v2/docker/system/prune:
+    post:
+      description: Removes unused data
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Prune Docker System
+      tags:
+      - docker-system
+  /v2/docker/volumes/:
+    get:
+      description: Returns a list of all volumes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/docker.VolumeInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Docker Volumes
+      tags:
+      - docker-volumes
+    post:
+      consumes:
+      - application/json
+      description: Create a new Docker volume manually
+      parameters:
+      - description: Volume details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/docker.CreateVolumeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/docker.VolumeInfo'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create a Docker Volume
+      tags:
+      - volumes
+  /v2/docker/volumes/{name}:
+    delete:
+      description: Removes a volume by name
+      parameters:
+      - description: Volume Name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Force remove
+        in: query
+        name: force
+        type: boolean
+      responses:
+        "204":
+          description: No Content
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a Docker Volume
+      tags:
+      - docker-volumes
+  /v2/metadata/:
+    get:
+      consumes:
+      - application/json
+      description: Returns metadata about the API including author, version, etc.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/metadata.MetadataResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get API Metadata
+      tags:
+      - metadata
+  /v2/system/:
+    get:
+      consumes:
+      - application/json
+      description: Returns system information like CPU, RAM, Disk, Network, etc.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/system.SystemResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get System Metrics
+      tags:
+      - system
+  /v2/users/:
+    get:
+      description: Get a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/users.UserResponse'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Creates a user with hashed password and specific permissions
+      parameters:
+      - description: User details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/users.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/users.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new user
+      tags:
+      - users
+  /v2/users/{id}:
+    delete:
+      description: Permanently delete a user account
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Cannot delete yourself
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a user
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Modify user permissions or profile
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update user
+      tags:
+      - users
+  /v2/users/me:
+    get:
+      description: Get the currently authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get my profile
+      tags:
+      - users
+  /v2/users/me/password:
+    put:
+      consumes:
+      - application/json
+      description: Change your own password
+      parameters:
+      - description: Password update details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update my password
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

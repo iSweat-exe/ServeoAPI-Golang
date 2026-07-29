@@ -1,0 +1,98 @@
+package docker
+
+import (
+	"bufio"
+	"encoding/json"
+	"net/http"
+
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
+	"serveoapi/internal/core/stream"
+)
+
+// StreamContainerLogs godoc
+// @Summary      Stream Container Logs (SSE)
+// @Description  Streams logs of a container using Server-Sent Events
+// @Tags         docker-containers
+// @Produce      text/event-stream
+// @Security     ApiKeyAuth
+// @Param        id   path      string  true  "Container ID"
+// @Success      200  {string}  string "Event Stream"
+// @Router       /v2/docker/containers/{id}/logs [get]
+func StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cli.Close()
+
+	options := container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+		Tail:       "50",
+	}
+
+	reader, err := cli.ContainerLogs(r.Context(), id, options)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	defer reader.Close()
+
+	stream.SetupSSEHeaders(w)
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		// Enlever l'en-tête de 8 bytes des logs docker multiplexés (stdout/stderr)
+		text := scanner.Text()
+		if len(text) > 8 {
+			text = text[8:]
+		}
+
+		// Encode to json string to escape quotes/newlines for SSE data payload safely
+		jsonBytes, _ := json.Marshal(text)
+		stream.SendSSEEvent(w, string(jsonBytes))
+	}
+	if err := scanner.Err(); err != nil {
+		stream.SendSSEEvent(w, "error: "+err.Error())
+	}
+}
+
+// StreamContainerStats godoc
+// @Summary      Stream Container Stats (SSE)
+// @Description  Streams CPU/RAM stats of a container using Server-Sent Events
+// @Tags         docker-containers
+// @Produce      text/event-stream
+// @Security     ApiKeyAuth
+// @Param        id   path      string  true  "Container ID"
+// @Success      200  {string}  string "Event Stream"
+// @Router       /v2/docker/containers/{id}/stats [get]
+func StreamContainerStats(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cli.Close()
+
+	statsResponse, err := cli.ContainerStats(r.Context(), id, true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	defer statsResponse.Body.Close()
+
+	stream.SetupSSEHeaders(w)
+
+	scanner := bufio.NewScanner(statsResponse.Body)
+	for scanner.Scan() {
+		stream.SendSSEEvent(w, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		stream.SendSSEEvent(w, "error: "+err.Error())
+	}
+}

@@ -1,0 +1,23 @@
+# Binaires compilés
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Fichiers de test / couverture
+*.out
+*.test
+
+# Fichiers d'environnement & IDE
+.env
+.env.local
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
