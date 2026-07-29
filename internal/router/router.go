@@ -10,7 +10,9 @@ import (
 	"serveoapi/internal/modules/v2/auth"
 	"serveoapi/internal/modules/v2/docker"
 	"serveoapi/internal/modules/v2/metadata"
+	"serveoapi/internal/modules/v2/ovh"
 	"serveoapi/internal/modules/v2/system"
+	"serveoapi/internal/modules/v2/templates"
 	"serveoapi/internal/modules/v2/users"
 )
 
@@ -34,6 +36,8 @@ func New() http.Handler {
 	system.RegisterRoutes(mux, authMiddleware)
 	docker.RegisterRoutes(mux, authMiddleware)
 	users.RegisterRoutes(mux, authMiddleware)
+	templates.RegisterRoutes(mux, authMiddleware)
+	ovh.RegisterRoutes(mux, authMiddleware)
 
 	// Apply Global Middlewares (RateLimit, CORS, Logger)
 	handler := middleware.RateLimit(mux)

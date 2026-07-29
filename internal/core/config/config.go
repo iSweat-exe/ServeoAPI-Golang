@@ -10,8 +10,16 @@ type Config struct {
 	Env              string
 	Port             string
 	RateLimit        int
+	SQLitePath       string
 	AllowedMountRoot string
+	TemplatesPath    string
 	APIToken         string
+	
+	// OVH Cloud
+	OvhEndpoint    string
+	OvhAppKey      string
+	OvhAppSecret   string
+	OvhConsumerKey string
 }
 
 func Load() *Config {
@@ -19,8 +27,15 @@ func Load() *Config {
 		Env:              "development",
 		Port:             "8080",
 		RateLimit:        10, // 10 requests per second default
+		SQLitePath:       "serveo.db",
 		AllowedMountRoot: "/var/serveoapi/data/",
-		APIToken:         "isweat_123", //! Default for dev, MUST change in prod
+		TemplatesPath:    getEnv("TEMPLATES_PATH", "./data/templates"),
+		APIToken:         getEnv("API_TOKEN", DefaultAPIToken), // Bounded to version.go for CI/CD injection
+
+		OvhEndpoint:    getEnv("OVH_ENDPOINT", ""), // e.g. "ovh-eu"
+		OvhAppKey:      getEnv("OVH_APP_KEY", ""),
+		OvhAppSecret:   getEnv("OVH_APP_SECRET", ""),
+		OvhConsumerKey: getEnv("OVH_CONSUMER_KEY", ""),
 	}
 
 	if port := os.Getenv("PORT"); port != "" {
@@ -51,3 +66,11 @@ func Load() *Config {
 
 	return cfg
 }
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+

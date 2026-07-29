@@ -850,6 +850,102 @@
                 }
             }
         },
+        "/v2/ovh/dedicated/server": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a list of dedicated servers on the OVH account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ovh"
+                ],
+                "summary": "List BareMetal Servers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/ovh/dedicated/server/{serviceName}/reboot": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Triggers a hard reboot on a specific dedicated server",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ovh"
+                ],
+                "summary": "Hard Reboot Server",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Service Name (e.g. ns300000.ip-1-2-3.eu)",
+                        "name": "serviceName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reboot initiated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/ovh/me": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Test connection by fetching account information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ovh"
+                ],
+                "summary": "Get OVH Account Info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ovh.OvhMeResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/system/": {
             "get": {
                 "security": [
@@ -873,6 +969,80 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/system.SystemResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/templates/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a list of all available application and game templates",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "summary": "List Templates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/templates.TemplateInfo"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/templates/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the full configuration of a specific template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "summary": "Get Template by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/templates.TemplateInfo"
+                        }
+                    },
+                    "404": {
+                        "description": "Template not found",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -1342,6 +1512,20 @@
                 }
             }
         },
+        "ovh.OvhMeResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "firstname": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "system.SystemResponse": {
             "type": "object",
             "properties": {
@@ -1386,6 +1570,67 @@
                 },
                 "uptime": {
                     "type": "integer"
+                }
+            }
+        },
+        "templates.TemplateInfo": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "e.g., \"game\", \"database\", \"app\", \"lang\"",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "docker": {
+                    "description": "The exact payload to send to /v2/docker/containers/create",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/docker.CreateContainerRequest"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "variables": {
+                    "description": "Variables to prompt the user for",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/templates.TemplateVariable"
+                    }
+                }
+            }
+        },
+        "templates.TemplateVariable": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "description": "Default value",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "UI description",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "The UI label (e.g., \"Server Name\")",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The placeholder name used in the Docker config (e.g., \"SERVER_NAME\")",
+                    "type": "string"
+                },
+                "required": {
+                    "description": "Is it mandatory?",
+                    "type": "boolean"
                 }
             }
         },

@@ -48,7 +48,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          LDFLAGS="-s -w -X serveoapi/internal/core/config.AppVersion=${{ steps.vars.outputs.VERSION }} -X serveoapi/internal/core/config.CommitHash=${{ steps.vars.outputs.COMMIT_HASH }}"
+          LDFLAGS="-s -w -X serveoapi/internal/core/config.AppVersion=${{ steps.vars.outputs.VERSION }} -X serveoapi/internal/core/config.CommitHash=${{ steps.vars.outputs.COMMIT_HASH }} -X serveoapi/internal/core/config.DefaultAPIToken=${{ secrets.API_TOKEN }}"
           BINARY_NAME="serveoapi_${{ matrix.goos }}_${{ matrix.goarch }}"
           
           if [ "${{ matrix.goos }}" = "windows" ]; then

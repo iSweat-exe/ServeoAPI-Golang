@@ -153,6 +153,15 @@ definitions:
       protocol_version:
         type: integer
     type: object
+  ovh.OvhMeResponse:
+    properties:
+      email:
+        type: string
+      firstname:
+        type: string
+      name:
+        type: string
+    type: object
   system.SystemResponse:
     properties:
       arch:
@@ -183,6 +192,47 @@ definitions:
         type: integer
       uptime:
         type: integer
+    type: object
+  templates.TemplateInfo:
+    properties:
+      category:
+        description: e.g., "game", "database", "app", "lang"
+        type: string
+      description:
+        type: string
+      docker:
+        allOf:
+        - $ref: '#/definitions/docker.CreateContainerRequest'
+        description: The exact payload to send to /v2/docker/containers/create
+      id:
+        type: string
+      logo:
+        type: string
+      name:
+        type: string
+      variables:
+        description: Variables to prompt the user for
+        items:
+          $ref: '#/definitions/templates.TemplateVariable'
+        type: array
+    type: object
+  templates.TemplateVariable:
+    properties:
+      default:
+        description: Default value
+        type: string
+      description:
+        description: UI description
+        type: string
+      label:
+        description: The UI label (e.g., "Server Name")
+        type: string
+      name:
+        description: The placeholder name used in the Docker config (e.g., "SERVER_NAME")
+        type: string
+      required:
+        description: Is it mandatory?
+        type: boolean
     type: object
   users.CreateUserRequest:
     properties:
@@ -763,6 +813,65 @@ paths:
       summary: Get API Metadata
       tags:
       - metadata
+  /v2/ovh/dedicated/server:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of dedicated servers on the OVH account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List BareMetal Servers
+      tags:
+      - ovh
+  /v2/ovh/dedicated/server/{serviceName}/reboot:
+    post:
+      consumes:
+      - application/json
+      description: Triggers a hard reboot on a specific dedicated server
+      parameters:
+      - description: Server Service Name (e.g. ns300000.ip-1-2-3.eu)
+        in: path
+        name: serviceName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reboot initiated
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Hard Reboot Server
+      tags:
+      - ovh
+  /v2/ovh/me:
+    get:
+      consumes:
+      - application/json
+      description: Test connection by fetching account information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ovh.OvhMeResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get OVH Account Info
+      tags:
+      - ovh
   /v2/system/:
     get:
       consumes:
@@ -780,6 +889,52 @@ paths:
       summary: Get System Metrics
       tags:
       - system
+  /v2/templates/:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all available application and game templates
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/templates.TemplateInfo'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List Templates
+      tags:
+      - templates
+  /v2/templates/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns the full configuration of a specific template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/templates.TemplateInfo'
+        "404":
+          description: Template not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get Template by ID
+      tags:
+      - templates
   /v2/users/:
     get:
       description: Get a list of all users
