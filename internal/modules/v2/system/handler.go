@@ -1,7 +1,6 @@
 package system
 
 import (
-	"encoding/json"
 	"net/http"
 	"runtime"
 
@@ -10,7 +9,13 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
+	"gorm.io/gorm"
+	"serveoapi/internal/core/response"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 // GetSystem godoc
 // @Summary      Get System Metrics
@@ -21,7 +26,7 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {object}  SystemResponse
 // @Router       /v2/system/ [get]
-func GetSystem(w http.ResponseWriter, r *http.Request) {
+func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
 	// Mem
 	v, _ := mem.VirtualMemory()
 
@@ -86,6 +91,5 @@ func GetSystem(w http.ResponseWriter, r *http.Request) {
 		Uptime:        uptime,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }

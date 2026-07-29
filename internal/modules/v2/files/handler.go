@@ -1,7 +1,6 @@
 package files
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -9,9 +8,15 @@ import (
 	"regexp"
 
 	"github.com/docker/docker/client"
+	"gorm.io/gorm"
 
 	"serveoapi/internal/core/config"
+	"serveoapi/internal/core/response"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 var (
 	validServerRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
@@ -27,22 +32,23 @@ func init() {
 }
 
 // resolveSafeRoot verifies the server exists and returns an *os.Root for atomic safe path resolution
+// resolveSafeRoot verifies the server exists and returns an *os.Root for atomic safe path resolution
 func resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, bool) {
 	serverName := r.PathValue("server")
 	if !validServerRegex.MatchString(serverName) {
-		http.Error(w, "Invalid server name format", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid server name format")
 		return nil, "", false
 	}
 
 	if dockerClient == nil {
-		http.Error(w, "Docker client unavailable", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Docker client unavailable")
 		return nil, "", false
 	}
 
 	// Validation: check if container actually exists
 	_, err := dockerClient.ContainerInspect(r.Context(), serverName)
 	if err != nil {
-		http.Error(w, "Server not found or inaccessible", http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, "Server not found or inaccessible")
 		return nil, "", false
 	}
 
@@ -53,7 +59,7 @@ func resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, 
 	// This entirely closes the TOCTOU race window for intermediate directories
 	root, err := os.OpenRoot(rootPath)
 	if err != nil {
-		http.Error(w, "Security violation: Cannot open root directory safely", http.StatusForbidden)
+		response.SendError(w, http.StatusForbidden, "Security violation: Cannot open root directory safely")
 		return nil, "", false
 	}
 
@@ -79,7 +85,7 @@ func resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, 
 // @Param        path query string false "Relative path"
 // @Success      200  {array}   FileInfo
 // @Router       /v2/files/{server}/list [get]
-func ListFiles(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	root, reqPath, ok := resolveSafeRoot(w, r)
 	if !ok {
 		return
@@ -89,14 +95,14 @@ func ListFiles(w http.ResponseWriter, r *http.Request) {
 	// Safe read directly from the root
 	f, err := root.Open(reqPath)
 	if err != nil {
-		http.Error(w, "Directory not found or cannot be read", http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, "Directory not found or cannot be read")
 		return
 	}
 	defer f.Close()
 
 	entries, err := f.Readdir(-1)
 	if err != nil {
-		http.Error(w, "Target is not a directory", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Target is not a directory")
 		return
 	}
 
@@ -117,8 +123,7 @@ func ListFiles(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(fileList)
+	response.SendJSON(w, http.StatusOK, fileList)
 }
 
 // ReadFile godoc
@@ -130,7 +135,7 @@ func ListFiles(w http.ResponseWriter, r *http.Request) {
 // @Param        server path string true "Server Name"
 // @Param        path query string true "Relative path to file"
 // @Router       /v2/files/{server}/read [get]
-func ReadFile(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
 	root, reqPath, ok := resolveSafeRoot(w, r)
 	if !ok {
 		return
@@ -140,14 +145,14 @@ func ReadFile(w http.ResponseWriter, r *http.Request) {
 	// Atomic open safe against symlink races
 	f, err := root.OpenFile(reqPath, os.O_RDONLY, 0)
 	if err != nil {
-		http.Error(w, "File not found or cannot be read", http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, "File not found or cannot be read")
 		return
 	}
 	defer f.Close()
 
 	info, err := f.Stat()
 	if err != nil || info.IsDir() {
-		http.Error(w, "Invalid file", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid file")
 		return
 	}
 
@@ -164,7 +169,7 @@ func ReadFile(w http.ResponseWriter, r *http.Request) {
 // @Param        server path string true "Server Name"
 // @Param        path query string true "Relative path to file"
 // @Router       /v2/files/{server}/write [post]
-func WriteFile(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
 	root, reqPath, ok := resolveSafeRoot(w, r)
 	if !ok {
 		return
@@ -174,18 +179,17 @@ func WriteFile(w http.ResponseWriter, r *http.Request) {
 	// Atomic open safe against symlink races (O_TRUNC implies modification)
 	f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		http.Error(w, "Cannot open file for writing: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Cannot open file for writing: "+err.Error())
 		return
 	}
 	defer f.Close()
 
 	if _, err := io.Copy(f, r.Body); err != nil {
-		http.Error(w, "Error writing file", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Error writing file")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "File saved successfully"})
+	response.SendJSON(w, http.StatusOK, map[string]string{"message": "File saved successfully"})
 }
 
 // UploadFile godoc
@@ -198,7 +202,7 @@ func WriteFile(w http.ResponseWriter, r *http.Request) {
 // @Param        server path string true "Server Name"
 // @Param        path query string true "Relative destination directory path"
 // @Router       /v2/files/{server}/upload [post]
-func UploadFile(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	root, reqPath, ok := resolveSafeRoot(w, r)
 	if !ok {
 		return
@@ -208,20 +212,20 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	// Stream multipart directly without buffering into RAM/tmpfs
 	reader, err := r.MultipartReader()
 	if err != nil {
-		http.Error(w, "Invalid multipart request", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid multipart request")
 		return
 	}
 
 	part, err := reader.NextPart()
 	if err != nil {
-		http.Error(w, "No file provided", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "No file provided")
 		return
 	}
 	defer part.Close()
 
 	cleanFileName := filepath.Base(part.FileName())
 	if cleanFileName == "." || cleanFileName == "/" || cleanFileName == "" {
-		http.Error(w, "Invalid filename", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid filename")
 		return
 	}
 
@@ -230,19 +234,18 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	// Atomic file creation within the secure root
 	f, err := root.OpenFile(finalPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		http.Error(w, "Cannot create file: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Cannot create file: "+err.Error())
 		return
 	}
 	defer f.Close()
 
 	// True 1-pass zero-memory streaming to disk
 	if _, err := io.Copy(f, part); err != nil {
-		http.Error(w, "Error saving file", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Error saving file")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "File uploaded successfully"})
+	response.SendJSON(w, http.StatusOK, map[string]string{"message": "File uploaded successfully"})
 }
 
 // DeleteFile godoc
@@ -254,7 +257,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 // @Param        server path string true "Server Name"
 // @Param        path query string true "Relative path to file or directory"
 // @Router       /v2/files/{server}/delete [delete]
-func DeleteFile(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	root, reqPath, ok := resolveSafeRoot(w, r)
 	if !ok {
 		return
@@ -262,16 +265,15 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 	defer root.Close()
 
 	if reqPath == "." || reqPath == "/" {
-		http.Error(w, "Cannot delete root directory", http.StatusForbidden)
+		response.SendError(w, http.StatusForbidden, "Cannot delete root directory")
 		return
 	}
 
 	// Atomic recursive removal safe against TOCTOU
 	if err := root.RemoveAll(reqPath); err != nil {
-		http.Error(w, "Cannot delete file: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Cannot delete file: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "File deleted successfully"})
+	response.SendJSON(w, http.StatusOK, map[string]string{"message": "File deleted successfully"})
 }

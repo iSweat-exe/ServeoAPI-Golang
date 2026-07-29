@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -21,7 +22,7 @@ func GetNetworks(w http.ResponseWriter, r *http.Request) {
 
 	networks, err := cli.NetworkList(context.Background(), network.ListOptions{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -42,8 +43,7 @@ func GetNetworks(w http.ResponseWriter, r *http.Request) {
 		resp = []NetworkInfo{}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }
 
 // DeleteNetwork godoc
@@ -61,7 +61,7 @@ func DeleteNetwork(w http.ResponseWriter, r *http.Request) {
 
 	err := cli.NetworkRemove(context.Background(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -88,7 +88,7 @@ type CreateNetworkRequest struct {
 func CreateNetwork(w http.ResponseWriter, r *http.Request) {
 	var req CreateNetworkRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
@@ -105,7 +105,7 @@ func CreateNetwork(w http.ResponseWriter, r *http.Request) {
 
 	res, err := cli.NetworkCreate(r.Context(), req.Name, options)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -131,3 +131,4 @@ func CreateNetwork(w http.ResponseWriter, r *http.Request) {
 		Driver: net.Driver,
 	})
 }
+

@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -32,12 +33,12 @@ type DeployStackRequest struct {
 func DeployStack(w http.ResponseWriter, r *http.Request) {
 	var req DeployStackRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
 	if req.Name == "" || req.Content == "" {
-		http.Error(w, "Name and Content are required", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Name and Content are required")
 		return
 	}
 
@@ -47,7 +48,7 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 	// 1. Security Check: Parse YAML and inspect Volumes
 	var compose map[string]interface{}
 	if err := yaml.Unmarshal([]byte(req.Content), &compose); err != nil {
-		http.Error(w, "Invalid YAML format: "+err.Error(), http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid YAML format: "+err.Error())
 		return
 	}
 
@@ -74,12 +75,12 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 							if strings.Contains(src, "/") || strings.Contains(src, "\\") || strings.HasPrefix(src, ".") {
 								// Deny any relative paths entirely for safety
 								if strings.HasPrefix(src, ".") {
-									http.Error(w, "Security Error: Relative paths in volumes are forbidden in service '"+srvName+"'", http.StatusBadRequest)
+									response.SendError(w, http.StatusBadRequest, "Security Error: Relative paths in volumes are forbidden in service '"+srvName+"'")
 									return
 								}
 								// Check absolute path
 								if !strings.HasPrefix(src, allowedRoot) {
-									http.Error(w, "Security Error: Bind mounts are restricted to "+allowedRoot+" in service '"+srvName+"'", http.StatusBadRequest)
+									response.SendError(w, http.StatusBadRequest, "Security Error: Bind mounts are restricted to "+allowedRoot+" in service '"+srvName+"'")
 									return
 								}
 							}
@@ -95,7 +96,7 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 	fileName := filepath.Join(tmpDir, "serveo_stack_"+req.Name+"_"+time.Now().Format("20060102150405")+".yml")
 
 	if err := os.WriteFile(fileName, []byte(req.Content), 0644); err != nil {
-		http.Error(w, "Failed to write temp compose file", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Failed to write temp compose file")
 		return
 	}
 
@@ -107,7 +108,7 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.CommandContext(r.Context(), "docker", "compose", "-f", fileName, "-p", req.Name, "up", "-d")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		http.Error(w, "Docker Compose failed: "+string(out), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Docker Compose failed: "+string(out))
 		return
 	}
 
@@ -118,3 +119,4 @@ func DeployStack(w http.ResponseWriter, r *http.Request) {
 		"output":  string(out),
 	})
 }
+

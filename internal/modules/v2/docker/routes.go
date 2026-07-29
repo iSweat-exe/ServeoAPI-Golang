@@ -3,9 +3,10 @@ package docker
 import (
 	"net/http"
 	"serveoapi/internal/core/middleware"
+	"gorm.io/gorm"
 )
 
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler) {
+func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB) {
 	// Containers
 	mux.Handle("GET /v2/docker/containers/", authMiddleware(middleware.RequirePermission("docker.containers.read", http.HandlerFunc(GetContainers))))
 	mux.Handle("POST /v2/docker/containers/create", authMiddleware(middleware.RequirePermission("docker.containers.write", http.HandlerFunc(CreateContainer))))

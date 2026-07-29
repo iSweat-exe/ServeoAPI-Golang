@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -26,7 +27,7 @@ func GetContainers(w http.ResponseWriter, r *http.Request) {
 
 	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
-		http.Error(w, "Failed to list containers: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Failed to list containers: "+err.Error())
 		return
 	}
 
@@ -49,8 +50,7 @@ func GetContainers(w http.ResponseWriter, r *http.Request) {
 		resp = []ContainerInfo{}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }
 
 // InspectContainer godoc
@@ -68,12 +68,11 @@ func InspectContainer(w http.ResponseWriter, r *http.Request) {
 
 	info, err := cli.ContainerInspect(context.Background(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	response.SendJSON(w, http.StatusOK, info)
 }
 
 // ActionContainer godoc
@@ -101,12 +100,12 @@ func ActionContainer(w http.ResponseWriter, r *http.Request) {
 	case "restart":
 		err = cli.ContainerRestart(ctx, id, container.StopOptions{})
 	default:
-		http.Error(w, "Invalid action. Use start, stop, or restart.", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid action. Use start, stop, or restart.")
 		return
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -133,7 +132,7 @@ func DeleteContainer(w http.ResponseWriter, r *http.Request) {
 		RemoveVolumes: false,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -163,7 +162,7 @@ type CreateContainerRequest struct {
 func CreateContainer(w http.ResponseWriter, r *http.Request) {
 	var req CreateContainerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
@@ -183,7 +182,7 @@ func CreateContainer(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(src, "/") || strings.Contains(src, "\\") {
 			// Resolve to absolute path to prevent ../ bypasses
 			if !strings.HasPrefix(src, allowedRoot) {
-				http.Error(w, "Security Error: Bind mounts are restricted to "+allowedRoot, http.StatusBadRequest)
+				response.SendError(w, http.StatusBadRequest, "Security Error: Bind mounts are restricted to "+allowedRoot)
 				return
 			}
 		}
@@ -221,20 +220,20 @@ func CreateContainer(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := cli.ContainerCreate(r.Context(), containerConfig, &hostConfig, nil, nil, req.Name)
 	if err != nil {
-		http.Error(w, "Create failed: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Create failed: "+err.Error())
 		return
 	}
 
 	// 5. Start Container
 	if err := cli.ContainerStart(r.Context(), resp.ID, container.StartOptions{}); err != nil {
-		http.Error(w, "Start failed: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Start failed: "+err.Error())
 		return
 	}
 
 	// Return info
 	inspect, err := cli.ContainerInspect(r.Context(), resp.ID)
 	if err != nil {
-		http.Error(w, "Inspect failed: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Inspect failed: "+err.Error())
 		return
 	}
 
@@ -248,3 +247,4 @@ func CreateContainer(w http.ResponseWriter, r *http.Request) {
 		Status: inspect.State.Status, // inspect doesn't have a pre-formatted 'Up X hours' string like ContainerList
 	})
 }
+

@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"bufio"
 	"encoding/json"
 	"net/http"
@@ -31,7 +32,7 @@ func StreamContainerLogs(w http.ResponseWriter, r *http.Request) {
 
 	reader, err := cli.ContainerLogs(r.Context(), id, options)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, err.Error())
 		return
 	}
 	defer reader.Close()
@@ -70,7 +71,7 @@ func StreamContainerStats(w http.ResponseWriter, r *http.Request) {
 
 	statsResponse, err := cli.ContainerStats(r.Context(), id, true)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, err.Error())
 		return
 	}
 	defer statsResponse.Body.Close()
@@ -85,3 +86,4 @@ func StreamContainerStats(w http.ResponseWriter, r *http.Request) {
 		stream.SendSSEEvent(w, "error: "+err.Error())
 	}
 }
+

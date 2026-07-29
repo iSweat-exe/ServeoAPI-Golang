@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"serveoapi/internal/core/contextkeys"
+	"serveoapi/internal/core/response"
 )
 
 // JWTAuth middleware verifies the JWT token
@@ -22,19 +23,16 @@ func JWTAuth(next http.Handler) http.Handler {
 				// Fallback (ex: pour Swagger)
 				tokenString = strings.TrimSpace(authHeader)
 			}
-		} else {
-			// Fallback pour les IDEs et clients (comme Cursor/Antigravity) qui ne supportent pas les Headers HTTP
-			tokenString = r.URL.Query().Get("token")
 		}
 
 		if tokenString == "" {
-			http.Error(w, "Missing Authorization header or token parameter", http.StatusUnauthorized)
+			response.SendError(w, http.StatusUnauthorized, "Missing Authorization header or token parameter")
 			return
 		}
 
 		userID, permissions, err := ValidateToken(tokenString)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			response.SendError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
 

@@ -1,12 +1,17 @@
 package metadata
 
 import (
-	"encoding/json"
 	"net/http"
 	"runtime"
 
 	"serveoapi/internal/core/config"
+	"serveoapi/internal/core/response"
+	"gorm.io/gorm"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 // GetMetadata godoc
 // @Summary      Get API Metadata
@@ -17,7 +22,7 @@ import (
 // @Security     ApiKeyAuth
 // @Success      200  {object}  MetadataResponse
 // @Router       /v2/metadata/ [get]
-func GetMetadata(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetadata(w http.ResponseWriter, r *http.Request) {
 	resp := MetadataResponse{
 		Author:          "iSweat",
 		APIVersion:      config.AppVersion,
@@ -29,6 +34,5 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 		DeprecationInfo: "",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }

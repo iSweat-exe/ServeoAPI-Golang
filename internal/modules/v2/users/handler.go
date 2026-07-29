@@ -6,13 +6,19 @@ import (
 	"strconv"
 
 	"serveoapi/internal/core/contextkeys"
-	"serveoapi/internal/core/database"
+	"serveoapi/internal/core/response"
+	"serveoapi/internal/core/validation"
 	"serveoapi/internal/modules/v2/auth"
+	"gorm.io/gorm"
 )
 
+type Handler struct {
+	DB *gorm.DB
+}
+
 type CreateUserRequest struct {
-	Username       string `json:"username"`
-	Password       string `json:"password"`
+	Username       string `json:"username" validate:"required"`
+	Password       string `json:"password" validate:"required,min=8"`
 	Permissions    string `json:"permissions"`
 	ProfilePicture string `json:"profile_picture"`
 }
@@ -54,10 +60,15 @@ func mapToResponse(u auth.User) UserResponse {
 // @Success      201  {object}  UserResponse
 // @Failure      400  {string}  string
 // @Router       /v2/users/ [post]
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
+		return
+	}
+
+	if err := validation.Validator.Struct(req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -69,18 +80,16 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := newUser.HashPassword(req.Password); err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Error hashing password")
 		return
 	}
 
-	if err := database.DB.Create(&newUser).Error; err != nil {
-		http.Error(w, "Could not create user (username might exist)", http.StatusConflict)
+	if err := h.DB.Create(&newUser).Error; err != nil {
+		response.SendError(w, http.StatusConflict, "Could not create user (username might exist)")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(mapToResponse(newUser))
+	response.SendJSON(w, http.StatusCreated, mapToResponse(newUser))
 }
 
 // GetUsers godoc
@@ -91,10 +100,10 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Success      200  {array}   UserResponse
 // @Router       /v2/users/ [get]
-func GetUsers(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []auth.User
-	if err := database.DB.Find(&users).Error; err != nil {
-		http.Error(w, "Error fetching users", http.StatusInternalServerError)
+	if err := h.DB.Find(&users).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Error fetching users")
 		return
 	}
 
@@ -103,8 +112,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		res = append(res, mapToResponse(u))
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	response.SendJSON(w, http.StatusOK, res)
 }
 
 // UpdateUser godoc
@@ -118,17 +126,22 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 // @Param        body body UpdateUserRequest true "Update details"
 // @Success      200  {object}  UserResponse
 // @Router       /v2/users/{id} [patch]
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
+		return
+	}
+
+	if err := validation.Validator.Struct(req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var user auth.User
-	if err := database.DB.First(&user, id).Error; err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+	if err := h.DB.First(&user, id).Error; err != nil {
+		response.SendError(w, http.StatusNotFound, "User not found")
 		return
 	}
 
@@ -142,10 +155,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		user.Status = *req.Status
 	}
 
-	database.DB.Save(&user)
+	h.DB.Save(&user)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(mapToResponse(user))
+	response.SendJSON(w, http.StatusOK, mapToResponse(user))
 }
 
 // DeleteUser godoc
@@ -157,20 +169,18 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Success      204
 // @Failure      400  {string}  string "Cannot delete yourself"
 // @Router       /v2/users/{id} [delete]
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	// Prevent deleting yourself
-	userIDObj := r.Context().Value(contextkeys.UserIDKey)
-	if userIDObj != nil {
-		userID := userIDObj.(uint)
+	if userID, ok := contextkeys.GetUserID(r.Context()); ok {
 		idStr := strconv.FormatUint(uint64(userID), 10)
 		if id == idStr {
-			http.Error(w, "Cannot delete your own account", http.StatusBadRequest)
+			response.SendError(w, http.StatusBadRequest, "Cannot delete your own account")
 			return
 		}
 	}
 
-	database.DB.Delete(&auth.User{}, id)
+	h.DB.Delete(&auth.User{}, id)
 	w.WriteHeader(http.StatusNoContent)
 }

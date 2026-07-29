@@ -52,7 +52,20 @@ func ValidateToken(tokenString string) (uint, string, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		permissions, _ := claims["permissions"].(string)
 		userIDFloat, _ := claims["sub"].(float64)
-		return uint(userIDFloat), permissions, nil
+		tokenVersionFloat, _ := claims["token_version"].(float64)
+		userID := uint(userIDFloat)
+
+		// Verify TokenVersion against database
+		var user auth.User
+		if err := database.DB.Select("token_version").First(&user, userID).Error; err != nil {
+			return 0, "", errors.New("user not found")
+		}
+
+		if int(tokenVersionFloat) != user.TokenVersion {
+			return 0, "", errors.New("token has been revoked")
+		}
+
+		return userID, permissions, nil
 	}
 
 	return 0, "", errors.New("invalid token payload")

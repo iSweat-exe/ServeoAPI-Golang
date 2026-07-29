@@ -8,7 +8,13 @@ import (
 	"strings"
 
 	"serveoapi/internal/core/config"
+	"serveoapi/internal/core/response"
+	"gorm.io/gorm"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 // ensureTemplatesDir checks if the folder exists, and if not, creates it and loads default templates.
 func ensureTemplatesDir() error {
@@ -32,16 +38,16 @@ func ensureTemplatesDir() error {
 // @Security     ApiKeyAuth
 // @Success      200  {array}   TemplateInfo
 // @Router       /v2/templates/ [get]
-func GetTemplates(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetTemplates(w http.ResponseWriter, r *http.Request) {
 	if err := ensureTemplatesDir(); err != nil {
-		http.Error(w, "Failed to load templates directory", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Failed to load templates directory")
 		return
 	}
 
 	cfg := config.Load()
 	files, err := os.ReadDir(cfg.TemplatesPath)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -63,8 +69,7 @@ func GetTemplates(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(templates)
+	response.SendJSON(w, http.StatusOK, templates)
 }
 
 // GetTemplate godoc
@@ -78,21 +83,21 @@ func GetTemplates(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  TemplateInfo
 // @Failure      404  {string}  string "Template not found"
 // @Router       /v2/templates/{id} [get]
-func GetTemplate(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	cfg := config.Load()
 
 	// Prevent path traversal
 	cleanPath := filepath.Clean(id + ".json")
 	if strings.Contains(cleanPath, "..") || strings.Contains(cleanPath, "/") || strings.Contains(cleanPath, "\\") {
-		http.Error(w, "Invalid template ID", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid template ID")
 		return
 	}
 
 	fullPath := filepath.Join(cfg.TemplatesPath, cleanPath)
 	data, err := os.ReadFile(fullPath)
 	if err != nil {
-		http.Error(w, "Template not found", http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, "Template not found")
 		return
 	}
 

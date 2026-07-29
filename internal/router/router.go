@@ -6,6 +6,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "serveoapi/docs" // Swagger generated docs
+	"serveoapi/internal/core/database"
 	"serveoapi/internal/core/middleware"
 	"serveoapi/internal/modules/v2/apikeys"
 	"serveoapi/internal/modules/v2/auth"
@@ -32,24 +33,21 @@ func New() http.Handler {
 	authMiddleware := middleware.JWTAuth
 
 	// Register Auth routes (Login public, Logout protected)
-	auth.RegisterRoutes(mux, authMiddleware)
+	auth.RegisterRoutes(mux, authMiddleware, database.DB)
 
 	// Register Modules
-	metadata.RegisterRoutes(mux, authMiddleware)
-	system.RegisterRoutes(mux, authMiddleware)
-	docker.RegisterRoutes(mux, authMiddleware)
-	files.RegisterRoutes(mux, authMiddleware)
-	users.RegisterRoutes(mux, authMiddleware)
-	templates.RegisterRoutes(mux, authMiddleware)
-	ovh.RegisterRoutes(mux, authMiddleware)
-	mcp.RegisterRoutes(mux, authMiddleware)
-	apikeys.RegisterRoutes(mux, authMiddleware)
+	metadata.RegisterRoutes(mux, authMiddleware, database.DB)
+	system.RegisterRoutes(mux, authMiddleware, database.DB)
+	docker.RegisterRoutes(mux, authMiddleware, database.DB)
+	files.RegisterRoutes(mux, authMiddleware, database.DB)
+	users.RegisterRoutes(mux, authMiddleware, database.DB)
+	templates.RegisterRoutes(mux, authMiddleware, database.DB)
+	ovh.RegisterRoutes(mux, authMiddleware, database.DB)
+	mcp.RegisterRoutes(mux, authMiddleware, database.DB)
+	apikeys.RegisterRoutes(mux, authMiddleware, database.DB)
 
-	// Serve AI Skills definitions
-	mux.HandleFunc("GET /skills.md", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
-		http.ServeFile(w, r, "skills.md")
-	})
+	// Serve AI Skills definitions (legacy path, redirects to or serves LLMs/skills.md if needed, but we expose the whole folder now)
+	mux.Handle("GET /LLMs/", http.StripPrefix("/LLMs/", http.FileServer(http.Dir("LLMs"))))
 
 	// Apply Global Middlewares (RateLimit, CORS, Logger)
 	handler := middleware.RateLimit(mux)

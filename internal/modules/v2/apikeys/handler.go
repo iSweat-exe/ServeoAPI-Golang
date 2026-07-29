@@ -8,8 +8,13 @@ import (
 	"net/http"
 
 	"serveoapi/internal/core/contextkeys"
-	"serveoapi/internal/core/database"
+	"serveoapi/internal/core/response"
+	"gorm.io/gorm"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 // generateSecureToken creates a random 64-character token
 func generateSecureToken() (string, error) {
@@ -37,23 +42,28 @@ func hashToken(token string) string {
 // @Param        request body CreateApiKeyRequest true "Key details"
 // @Success      201  {object}  CreateApiKeyResponse
 // @Router       /v2/apikeys/create [post]
-func CreateApiKey(w http.ResponseWriter, r *http.Request) {
-	userIDObj := r.Context().Value(contextkeys.UserIDKey)
-	if userIDObj == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+func (h *Handler) CreateApiKey(w http.ResponseWriter, r *http.Request) {
+	userID, ok := contextkeys.GetUserID(r.Context())
+	if !ok {
+		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	userID := userIDObj.(uint)
 
 	var req CreateApiKeyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Manual validation or validation tags if defined in model (assuming they are or we just check Name)
+	if req.Name == "" {
+		response.SendError(w, http.StatusBadRequest, "Name is required")
 		return
 	}
 
 	tokenString, err := generateSecureToken()
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Failed to generate token")
 		return
 	}
 
@@ -67,8 +77,8 @@ func CreateApiKey(w http.ResponseWriter, r *http.Request) {
 		Prefix:    prefix,
 	}
 
-	if err := database.DB.Create(&apiKey).Error; err != nil {
-		http.Error(w, "Failed to save API key", http.StatusInternalServerError)
+	if err := h.DB.Create(&apiKey).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Failed to save API key")
 		return
 	}
 
@@ -78,8 +88,7 @@ func CreateApiKey(w http.ResponseWriter, r *http.Request) {
 		Token: tokenString, // Send ONLY once
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusCreated, resp)
 }
 
 // ListApiKeys godoc
@@ -90,17 +99,16 @@ func CreateApiKey(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      200  {array}   ApiKeyResponse
 // @Router       /v2/apikeys/ [get]
-func ListApiKeys(w http.ResponseWriter, r *http.Request) {
-	userIDObj := r.Context().Value(contextkeys.UserIDKey)
-	if userIDObj == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+func (h *Handler) ListApiKeys(w http.ResponseWriter, r *http.Request) {
+	userID, ok := contextkeys.GetUserID(r.Context())
+	if !ok {
+		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	userID := userIDObj.(uint)
 
 	var keys []ApiKey
-	if err := database.DB.Where("user_id = ?", userID).Find(&keys).Error; err != nil {
-		http.Error(w, "Failed to fetch keys", http.StatusInternalServerError)
+	if err := h.DB.Where("user_id = ?", userID).Find(&keys).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Failed to fetch keys")
 		return
 	}
 
@@ -114,8 +122,7 @@ func ListApiKeys(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }
 
 // RevokeApiKey godoc
@@ -127,29 +134,28 @@ func ListApiKeys(w http.ResponseWriter, r *http.Request) {
 // @Param        id path int true "API Key ID"
 // @Success      200  {object}  map[string]string
 // @Router       /v2/apikeys/{id} [delete]
-func RevokeApiKey(w http.ResponseWriter, r *http.Request) {
-	userIDObj := r.Context().Value(contextkeys.UserIDKey)
-	if userIDObj == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+func (h *Handler) RevokeApiKey(w http.ResponseWriter, r *http.Request) {
+	userID, ok := contextkeys.GetUserID(r.Context())
+	if !ok {
+		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	userID := userIDObj.(uint)
 
 	keyID := r.PathValue("id")
 	if keyID == "" {
-		http.Error(w, "Key ID required", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Key ID required")
 		return
 	}
 
-	res := database.DB.Where("id = ? AND user_id = ?", keyID, userID).Delete(&ApiKey{})
+	res := h.DB.Where("id = ? AND user_id = ?", keyID, userID).Delete(&ApiKey{})
 	if res.Error != nil {
-		http.Error(w, "Failed to delete key", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Failed to delete key")
 		return
 	}
 	if res.RowsAffected == 0 {
-		http.Error(w, "Key not found", http.StatusNotFound)
+		response.SendError(w, http.StatusNotFound, "Key not found")
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"message": "API Key revoked successfully"})
+	response.SendJSON(w, http.StatusOK, map[string]string{"message": "API Key revoked successfully"})
 }

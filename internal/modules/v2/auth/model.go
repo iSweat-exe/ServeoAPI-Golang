@@ -17,6 +17,7 @@ type User struct {
 	ProfilePicture string `gorm:"type:text" json:"profile_picture"` // URL ou chemin de l'image
 	Status         string `gorm:"default:'offline'" json:"status"`  // online, offline, away
 	LastConnection *int64 `json:"last_connection"`                  // Timestamp UNIX
+	TokenVersion   int    `gorm:"default:0" json:"-"`               // Invalidate tokens on password change
 }
 
 // CheckPassword vérifie si le mot de passe fourni correspond au hash.

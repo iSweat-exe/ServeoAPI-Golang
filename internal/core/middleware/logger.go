@@ -28,10 +28,10 @@ const (
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Default status is 200 OK if WriteHeader is never called
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
-		
+
 		log.Printf("--> %s %s", r.Method, r.URL.Path)
 
 		next.ServeHTTP(rw, r)

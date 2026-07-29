@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -23,7 +24,7 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 
 	info, err := cli.Info(context.Background())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -37,8 +38,7 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 		ServerVersion:     info.ServerVersion,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }
 
 // PruneSystem godoc
@@ -55,7 +55,7 @@ func PruneSystem(w http.ResponseWriter, r *http.Request) {
 	// This acts as a basic container prune for demonstration
 	_, err := cli.ContainersPrune(context.Background(), filters.NewArgs())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -90,3 +90,4 @@ func StreamSystemEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+

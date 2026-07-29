@@ -7,15 +7,21 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"serveoapi/internal/core/contextkeys"
-	"serveoapi/internal/core/database"
+	"serveoapi/internal/core/response"
+	"serveoapi/internal/core/validation"
+	"gorm.io/gorm"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 // TODO: In production, load this from an environment variable!
 var JwtSecretKey = []byte("serveo_super_secret_key_change_me")
 
 type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type LoginResponse struct {
@@ -32,23 +38,28 @@ type LoginResponse struct {
 // @Success      200  {object}  LoginResponse
 // @Failure      401  {string}  string "Invalid credentials"
 // @Router       /v2/auth/login [post]
-func Login(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := validation.Validator.Struct(req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var user User
 	// Find user by username
-	if err := database.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+	if err := h.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		response.SendError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
 	// Verify password hash
 	if err := user.CheckPassword(req.Password); err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		response.SendError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
@@ -56,24 +67,24 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().Unix()
 	user.LastConnection = &now
 	user.Status = "online"
-	database.DB.Save(&user)
+	h.DB.Save(&user)
 
 	// Generate JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub":         user.ID,
-		"username":    user.Username,
-		"permissions": user.Permissions,
-		"exp":         time.Now().Add(time.Hour * 24).Unix(), // Expires in 24 hours
+		"sub":           user.ID,
+		"username":      user.Username,
+		"permissions":   user.Permissions,
+		"token_version": user.TokenVersion, // Add token_version to claims
+		"exp":           time.Now().Add(time.Hour * 24).Unix(), // Expires in 24 hours
 	})
 
 	tokenString, err := token.SignedString(JwtSecretKey)
 	if err != nil {
-		http.Error(w, "Could not generate token", http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "Could not generate token")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(LoginResponse{
+	response.SendJSON(w, http.StatusOK, LoginResponse{
 		Token: tokenString,
 	})
 }
@@ -85,18 +96,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      204
 // @Router       /v2/auth/logout [post]
-func Logout(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Extract userID from context (injected by JWT middleware)
-	userIDObj := r.Context().Value(contextkeys.UserIDKey)
-	if userIDObj == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	userID, ok := contextkeys.GetUserID(r.Context())
+	if !ok {
+		response.SendError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	userID := userIDObj.(uint)
-
-	// Set status to offline
-	database.DB.Model(&User{}).Where("id = ?", userID).Update("status", "offline")
+	var user User
+	if err := h.DB.First(&user, userID).Error; err == nil {
+		user.Status = "offline"
+		// Optionnel : invalider le token actuel lors du logout manuel :
+		// user.TokenVersion++
+		h.DB.Save(&user)
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -21,7 +22,7 @@ func GetVolumes(w http.ResponseWriter, r *http.Request) {
 
 	volumes, err := cli.VolumeList(context.Background(), volume.ListOptions{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -38,8 +39,7 @@ func GetVolumes(w http.ResponseWriter, r *http.Request) {
 		resp = []VolumeInfo{}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }
 
 // DeleteVolume godoc
@@ -59,7 +59,7 @@ func DeleteVolume(w http.ResponseWriter, r *http.Request) {
 
 	err := cli.VolumeRemove(context.Background(), name, force)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -86,7 +86,7 @@ type CreateVolumeRequest struct {
 func CreateVolume(w http.ResponseWriter, r *http.Request) {
 	var req CreateVolumeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
@@ -104,7 +104,7 @@ func CreateVolume(w http.ResponseWriter, r *http.Request) {
 
 	vol, err := cli.VolumeCreate(r.Context(), options)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -116,3 +116,4 @@ func CreateVolume(w http.ResponseWriter, r *http.Request) {
 		Mountpoint: vol.Mountpoint,
 	})
 }
+

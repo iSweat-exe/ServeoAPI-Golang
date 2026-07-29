@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"serveoapi/internal/core/response"
 	"bufio"
 	"context"
 	"encoding/json"
@@ -24,7 +25,7 @@ func GetImages(w http.ResponseWriter, r *http.Request) {
 
 	images, err := cli.ImageList(context.Background(), image.ListOptions{All: false})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -47,8 +48,7 @@ func GetImages(w http.ResponseWriter, r *http.Request) {
 		resp = []ImageInfo{}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	response.SendJSON(w, http.StatusOK, resp)
 }
 
 // PullImage godoc
@@ -64,7 +64,7 @@ func GetImages(w http.ResponseWriter, r *http.Request) {
 func PullImage(w http.ResponseWriter, r *http.Request) {
 	var req PullImageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Image == "" {
-		http.Error(w, "Invalid payload, missing image name", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Invalid payload or missing image name")
 		return
 	}
 
@@ -72,7 +72,7 @@ func PullImage(w http.ResponseWriter, r *http.Request) {
 
 	out, err := cli.ImagePull(r.Context(), req.Image, image.PullOptions{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	defer out.Close()
@@ -108,9 +108,10 @@ func DeleteImage(w http.ResponseWriter, r *http.Request) {
 		Force: force,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+

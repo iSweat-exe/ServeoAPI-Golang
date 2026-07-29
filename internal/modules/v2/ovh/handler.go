@@ -1,9 +1,14 @@
 package ovh
 
 import (
-	"encoding/json"
 	"net/http"
+	"serveoapi/internal/core/response"
+	"gorm.io/gorm"
 )
+
+type Handler struct {
+	DB *gorm.DB
+}
 
 // OvhMeResponse represents basic account information
 type OvhMeResponse struct {
@@ -15,7 +20,7 @@ type OvhMeResponse struct {
 // CheckConfig is a helper to verify if the module is enabled
 func checkConfig(w http.ResponseWriter) bool {
 	if GetClient() == nil {
-		http.Error(w, "OVH Module is not configured on this API", http.StatusServiceUnavailable)
+		response.SendError(w, http.StatusServiceUnavailable, "OVH Module is not configured on this API")
 		return false
 	}
 	return true
@@ -30,19 +35,18 @@ func checkConfig(w http.ResponseWriter) bool {
 // @Security     ApiKeyAuth
 // @Success      200  {object}  OvhMeResponse
 // @Router       /v2/ovh/me [get]
-func GetMe(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	if !checkConfig(w) {
 		return
 	}
 
 	var me OvhMeResponse
 	if err := GetClient().Get("/me", &me); err != nil {
-		http.Error(w, "OVH API Error: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "OVH API Error: "+err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(me)
+	response.SendJSON(w, http.StatusOK, me)
 }
 
 // ListDedicatedServers godoc
@@ -54,19 +58,18 @@ func GetMe(w http.ResponseWriter, r *http.Request) {
 // @Security     ApiKeyAuth
 // @Success      200  {array}   string
 // @Router       /v2/ovh/dedicated/server [get]
-func ListDedicatedServers(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListDedicatedServers(w http.ResponseWriter, r *http.Request) {
 	if !checkConfig(w) {
 		return
 	}
 
 	var servers []string
 	if err := GetClient().Get("/dedicated/server", &servers); err != nil {
-		http.Error(w, "OVH API Error: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "OVH API Error: "+err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(servers)
+	response.SendJSON(w, http.StatusOK, servers)
 }
 
 // HardRebootServer godoc
@@ -79,14 +82,14 @@ func ListDedicatedServers(w http.ResponseWriter, r *http.Request) {
 // @Param        serviceName   path      string  true  "Server Service Name (e.g. ns300000.ip-1-2-3.eu)"
 // @Success      200  {string}  string "Reboot initiated"
 // @Router       /v2/ovh/dedicated/server/{serviceName}/reboot [post]
-func HardRebootServer(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HardRebootServer(w http.ResponseWriter, r *http.Request) {
 	if !checkConfig(w) {
 		return
 	}
 
 	serviceName := r.PathValue("serviceName")
 	if serviceName == "" {
-		http.Error(w, "Missing serviceName parameter", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Missing serviceName parameter")
 		return
 	}
 
@@ -99,12 +102,11 @@ func HardRebootServer(w http.ResponseWriter, r *http.Request) {
 	var task map[string]interface{}
 	err := GetClient().Post("/dedicated/server/"+serviceName+"/reboot", nil, &task)
 	if err != nil {
-		http.Error(w, "OVH API Error: "+err.Error(), http.StatusInternalServerError)
+		response.SendError(w, http.StatusInternalServerError, "OVH API Error: "+err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	response.SendJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "Hard reboot initiated successfully",
 		"task":    task,
 	})
