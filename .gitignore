@@ -26,3 +26,4 @@
 serveo.db
 serveo.db-shm
 serveo.db-wal
+.agents/

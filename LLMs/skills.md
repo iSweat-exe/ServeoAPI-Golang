@@ -60,6 +60,7 @@ Full parameter/schema detail for every row is in `references/endpoints.md`.
 | Files (`{server}` = container name) | `GET .../list`, `GET .../read`, `POST .../write` (raw text), `POST .../upload` (multipart), `DELETE .../delete` |
 | Templates | `GET /v2/templates/`, `GET /v2/templates/{id}` |
 | Metadata | `GET /v2/metadata/` |
+| Health & Prometheus | `GET /health` (open), `GET /prometheus` (requires JWT) |
 | System (host metrics) | `GET /v2/system/` |
 | OVHcloud | `GET /v2/ovh/me`, `GET /v2/ovh/dedicated/server`, `POST /v2/ovh/dedicated/server/{serviceName}/reboot` |
 | MCP Server | `GET/POST /v2/mcp/` (Streamable HTTP, requires `mcp.use` permission). Uses standard MCP over SSE transport. |

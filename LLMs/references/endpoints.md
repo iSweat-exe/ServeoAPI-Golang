@@ -18,6 +18,7 @@ Every route except `POST /v2/auth/login` requires `Authorization: Bearer <token>
 - [Templates](#templates)
 - [Metadata](#metadata)
 - [System (host metrics)](#system-host-metrics)
+- [Health & Prometheus](#health--prometheus)
 - [OVHcloud](#ovhcloud)
 - [MCP Server (unconfirmed)](#mcp-server-unconfirmed)
 
@@ -381,6 +382,20 @@ Host-level metrics — CPU/RAM/disk/network for the machine ServeoAPI runs on. *
   ping: string
 }
 ```
+
+---
+
+## Health & Prometheus
+
+### `GET /health`
+Standard open healthcheck endpoint (no auth required) used by load balancers and container orchestrators. Checks DB and Docker socket connectivity.
+**200**: plain string ("OK")
+**503**: plain-string error body ("Database unhealthy" or "Docker socket unhealthy")
+
+### `GET /prometheus`
+Exposes application metrics for Prometheus scraping (Go runtime, HTTP latencies, memory).
+Requires standard JWT authentication (`Authorization: Bearer <token>`).
+**200**: `text/plain` (Prometheus metrics format)
 
 ---
 
