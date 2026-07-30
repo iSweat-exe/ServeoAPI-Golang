@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"serveoapi/internal/core/middleware"
+	"serveoapi/internal/modules/v2/auth"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -19,11 +20,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true // Autoriser toutes les origines pour le panel
 	},
-}
-
-type TerminalAuthMessage struct {
-	Type  string `json:"type"`
-	Token string `json:"token"`
 }
 
 type TerminalControlMessage struct {
@@ -103,10 +99,11 @@ func probeShell(
 
 // TerminalHandler godoc
 // @Summary      Interactive Docker Terminal (WebSocket)
-// @Description  Upgrades connection to a WebSocket. Expects first message: {"type": "auth", "token": "JWT"}. Subsequent JSON messages for input/resize. Outputs raw binary frames.
+// @Description  Upgrades connection to a WebSocket. Un ticket court (généré via /v2/auth/ticket) doit être fourni en paramètre d'URL (?ticket=...). Outputs raw binary frames.
 // @Tags         docker
-// @Param        id   path      string  true  "Container ID"
-// @Success      101  {string}  string  "Switching Protocols to WebSocket"
+// @Param        id       path      string  true  "Container ID"
+// @Param        ticket   query     string  true  "Authentication Ticket"
+// @Success      101      {string}  string  "Switching Protocols to WebSocket"
 // @Failure      400,401,403,404,500 {string} string
 // @Router       /v2/docker/containers/{id}/exec [get]
 func (h *Handler) TerminalHandler(
@@ -119,6 +116,23 @@ func (h *Handler) TerminalHandler(
 		return
 	}
 
+	ticket := r.URL.Query().Get("ticket")
+	if ticket == "" {
+		http.Error(w, "Ticket is required", http.StatusUnauthorized)
+		return
+	}
+
+	tokenString, ok := auth.ConsumeTicket(ticket)
+	if !ok {
+		http.Error(w, "Invalid or expired ticket", http.StatusUnauthorized)
+		return
+	}
+
+	if !hasContainerWritePermission(tokenString) {
+		http.Error(w, "Forbidden: Missing docker.containers.write", http.StatusForbidden)
+		return
+	}
+
 	cli := h.Service.DockerCli
 
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -126,40 +140,6 @@ func (h *Handler) TerminalHandler(
 		return // Impossible d'écrire une erreur HTTP ici, upgrader s'en charge
 	}
 	defer ws.Close()
-
-	// 1. Authentification au premier message (timeout 5s)
-	_ = ws.SetReadDeadline(time.Now().Add(5 * time.Second))
-	_, msgBytes, err := ws.ReadMessage()
-	if err != nil {
-		_ = ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(4001, "Auth timeout or error"),
-			time.Now().Add(time.Second),
-		)
-		return
-	}
-
-	var authMsg TerminalAuthMessage
-	if err := json.Unmarshal(msgBytes, &authMsg); err != nil || authMsg.Type != "auth" {
-		_ = ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(4001, "Expected auth message"),
-			time.Now().Add(time.Second),
-		)
-		return
-	}
-
-	if !hasContainerWritePermission(authMsg.Token) {
-		_ = ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(4003, "Forbidden: Missing docker.containers.write"),
-			time.Now().Add(time.Second),
-		)
-		return
-	}
-
-	// Supprimer la deadline de lecture pour le fonctionnement normal
-	_ = ws.SetReadDeadline(time.Time{})
 
 	// 3. Tester le Shell
 	ctx, cancel := context.WithCancel(r.Context())

@@ -14,4 +14,5 @@ func RegisterRoutes(
 	h := &Handler{DB: db}
 	mux.Handle("POST /v2/auth/login", http.HandlerFunc(h.Login))
 	mux.Handle("POST /v2/auth/logout", authMiddleware(http.HandlerFunc(h.Logout)))
+	mux.Handle("POST /v2/auth/ticket", authMiddleware(http.HandlerFunc(h.GetTicket)))
 }

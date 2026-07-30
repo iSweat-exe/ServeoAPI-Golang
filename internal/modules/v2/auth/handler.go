@@ -128,3 +128,35 @@ func (h *Handler) Logout(
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+type TicketResponse struct {
+	Ticket string `json:"ticket"`
+}
+
+// GetTicket godoc
+// @Summary      Generate a WebSocket Ticket
+// @Description  Génère un ticket court à usage unique (valable 30 secondes) pour authentifier une connexion WebSocket sans exposer le JWT dans l'URL.
+// @Tags         auth
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Success      200  {object}  TicketResponse
+// @Failure      401  {string}  string
+// @Router       /v2/auth/ticket [post]
+func (h *Handler) GetTicket(w http.ResponseWriter, r *http.Request) {
+	authStr := r.Header.Get("Authorization")
+	tokenString := ""
+
+	if len(authStr) > 7 && authStr[:7] == "Bearer " {
+		tokenString = authStr[7:]
+	} else {
+		tokenString = authStr
+	}
+
+	if tokenString == "" {
+		response.SendError(w, http.StatusUnauthorized, "Missing token")
+		return
+	}
+
+	ticket := GenerateTicket(tokenString)
+	response.SendJSON(w, http.StatusOK, TicketResponse{Ticket: ticket})
+}
