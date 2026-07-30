@@ -177,6 +177,9 @@ func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
 		}
 		defer f.Close()
 
+		// Appliquer les permissions de la racine au fichier
+		chownFileToMatchRoot(f, root)
+
 		if _, err := io.Copy(f, r.Body); err != nil {
 			response.SendError(w, http.StatusInternalServerError, "Failed to write content")
 			return
@@ -232,6 +235,9 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
+
+	// Appliquer les permissions de la racine au fichier uploadé
+	chownFileToMatchRoot(f, root)
 
 	// Véritable streaming vers le disque en une seule passe et sans consommation de mémoire
 	if _, err := io.Copy(f, part); err != nil {

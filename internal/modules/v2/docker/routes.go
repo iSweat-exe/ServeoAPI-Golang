@@ -43,6 +43,11 @@ func RegisterRoutes(
 		h.UpdateContainer,
 	)
 	registerRoute(
+		"PATCH /v2/docker/containers/{id}/rename",
+		"docker.containers.write",
+		h.RenameContainer,
+	)
+	registerRoute(
 		"POST /v2/docker/containers/{id}/{action}",
 		"docker.containers.write",
 		h.ActionContainer,

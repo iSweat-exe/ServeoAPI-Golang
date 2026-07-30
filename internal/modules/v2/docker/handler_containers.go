@@ -102,6 +102,58 @@ func (h *Handler) DeleteContainer(
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type RenameContainerRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
+// RenameContainer godoc
+// @Summary      Rename a Docker Container
+// @Description  Renames an existing Docker container.
+// @Tags         docker-containers
+// @Security     ApiKeyAuth
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string true "Container ID"
+// @Param        body body RenameContainerRequest true "New name"
+// @Success      204  "No Content"
+// @Failure      400,404,500 {string} string
+// @Router       /v2/docker/containers/{id}/rename [patch]
+func (h *Handler) RenameContainer(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	id := r.PathValue("id")
+	if id == "" {
+		response.SendError(w, http.StatusBadRequest, "Missing container ID")
+		return
+	}
+
+	var req RenameContainerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if req.Name == "" {
+		response.SendError(w, http.StatusBadRequest, "Name is required")
+		return
+	}
+
+	ctx := r.Context()
+	err := h.Service.RenameContainer(ctx, id, req.Name)
+	if err != nil {
+		if strings.Contains(err.Error(), "No such container") {
+			response.SendError(w, http.StatusNotFound, "Container not found")
+		} else if strings.Contains(err.Error(), "Conflict") {
+			response.SendError(w, http.StatusConflict, "Name already in use")
+		} else {
+			response.SendError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 type CreateContainerRequest struct {
 	Name          string            `json:"name"`
 	Image         string            `json:"image"`

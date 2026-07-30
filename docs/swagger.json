@@ -96,7 +96,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/apikeys.ApiKeyResponse"
+                                "$ref": "#/definitions/internal_modules_v2_apikeys.ApiKeyResponse"
                             }
                         }
                     }
@@ -128,7 +128,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/apikeys.CreateApiKeyRequest"
+                            "$ref": "#/definitions/internal_modules_v2_apikeys.CreateApiKeyRequest"
                         }
                     }
                 ],
@@ -136,7 +136,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/apikeys.CreateApiKeyResponse"
+                            "$ref": "#/definitions/internal_modules_v2_apikeys.CreateApiKeyResponse"
                         }
                     }
                 }
@@ -199,7 +199,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginRequest"
+                            "$ref": "#/definitions/internal_modules_v2_auth.LoginRequest"
                         }
                     }
                 ],
@@ -207,7 +207,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginResponse"
+                            "$ref": "#/definitions/internal_modules_v2_auth.LoginResponse"
                         }
                     },
                     "401": {
@@ -257,7 +257,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.TicketResponse"
+                            "$ref": "#/definitions/internal_modules_v2_auth.TicketResponse"
                         }
                     },
                     "401": {
@@ -299,7 +299,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/backups.BackupInfo"
+                                "$ref": "#/definitions/internal_modules_v2_backups.BackupInfo"
                             }
                         }
                     }
@@ -332,7 +332,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/backups.BackupInfo"
+                            "$ref": "#/definitions/internal_modules_v2_backups.BackupInfo"
                         }
                     },
                     "404": {
@@ -382,7 +382,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/backups.RestoreRequest"
+                            "$ref": "#/definitions/internal_modules_v2_backups.RestoreRequest"
                         }
                     }
                 ],
@@ -436,7 +436,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/docker.DeployStackRequest"
+                            "$ref": "#/definitions/internal_modules_v2_docker.DeployStackRequest"
                         }
                     }
                 ],
@@ -486,7 +486,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/docker.ContainerInfo"
+                                "$ref": "#/definitions/internal_modules_v2_docker.ContainerInfo"
                             }
                         }
                     }
@@ -518,7 +518,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/docker.CreateContainerRequest"
+                            "$ref": "#/definitions/internal_modules_v2_docker.CreateContainerRequest"
                         }
                     }
                 ],
@@ -526,7 +526,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/docker.ContainerInfo"
+                            "$ref": "#/definitions/internal_modules_v2_docker.ContainerInfo"
                         }
                     },
                     "400": {
@@ -705,6 +705,67 @@
                 }
             }
         },
+        "/v2/docker/containers/{id}/rename": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Renames an existing Docker container.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "docker-containers"
+                ],
+                "summary": "Rename a Docker Container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Container ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_modules_v2_docker.RenameContainerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/docker/containers/{id}/stats": {
             "get": {
                 "security": [
@@ -771,7 +832,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/docker.UpdateContainerRequest"
+                            "$ref": "#/definitions/internal_modules_v2_docker.UpdateContainerRequest"
                         }
                     }
                 ],
@@ -779,7 +840,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/docker.ContainerInfo"
+                            "$ref": "#/definitions/internal_modules_v2_docker.ContainerInfo"
                         }
                     },
                     "400": {
@@ -856,7 +917,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/docker.ImageInfo"
+                                "$ref": "#/definitions/internal_modules_v2_docker.ImageInfo"
                             }
                         }
                     }
@@ -888,7 +949,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/docker.PullImageRequest"
+                            "$ref": "#/definitions/internal_modules_v2_docker.PullImageRequest"
                         }
                     }
                 ],
@@ -957,7 +1018,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/docker.NetworkInfo"
+                                "$ref": "#/definitions/internal_modules_v2_docker.NetworkInfo"
                             }
                         }
                     }
@@ -987,7 +1048,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/docker.CreateNetworkRequest"
+                            "$ref": "#/definitions/internal_modules_v2_docker.CreateNetworkRequest"
                         }
                     }
                 ],
@@ -995,7 +1056,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/docker.NetworkInfo"
+                            "$ref": "#/definitions/internal_modules_v2_docker.NetworkInfo"
                         }
                     },
                     "400": {
@@ -1085,7 +1146,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/docker.SystemInfo"
+                            "$ref": "#/definitions/internal_modules_v2_docker.SystemInfo"
                         }
                     }
                 }
@@ -1131,7 +1192,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/docker.VolumeInfo"
+                                "$ref": "#/definitions/internal_modules_v2_docker.VolumeInfo"
                             }
                         }
                     }
@@ -1161,7 +1222,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/docker.CreateVolumeRequest"
+                            "$ref": "#/definitions/internal_modules_v2_docker.CreateVolumeRequest"
                         }
                     }
                 ],
@@ -1169,7 +1230,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/docker.VolumeInfo"
+                            "$ref": "#/definitions/internal_modules_v2_docker.VolumeInfo"
                         }
                     },
                     "400": {
@@ -1294,7 +1355,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/files.FileInfo"
+                                "$ref": "#/definitions/internal_modules_v2_files.FileInfo"
                             }
                         }
                     }
@@ -1431,7 +1492,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/metadata.MetadataResponse"
+                            "$ref": "#/definitions/internal_modules_v2_metadata.MetadataResponse"
                         }
                     }
                 }
@@ -1467,7 +1528,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/metrics.ContainerStat"
+                                "$ref": "#/definitions/internal_modules_v2_metrics.ContainerStat"
                             }
                         }
                     }
@@ -1495,7 +1556,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/metrics.SystemStat"
+                                "$ref": "#/definitions/internal_modules_v2_metrics.SystemStat"
                             }
                         }
                     }
@@ -1592,7 +1653,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ovh.OvhMeResponse"
+                            "$ref": "#/definitions/internal_modules_v2_ovh.OvhMeResponse"
                         }
                     }
                 }
@@ -1620,7 +1681,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/system.SystemResponse"
+                            "$ref": "#/definitions/internal_modules_v2_system.SystemResponse"
                         }
                     }
                 }
@@ -1675,7 +1736,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/templates.TemplateInfo"
+                                "$ref": "#/definitions/internal_modules_v2_templates.TemplateInfo"
                             }
                         }
                     }
@@ -1713,7 +1774,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/templates.TemplateInfo"
+                            "$ref": "#/definitions/internal_modules_v2_templates.TemplateInfo"
                         }
                     },
                     "404": {
@@ -1757,7 +1818,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/templates.DeployTemplateRequest"
+                            "$ref": "#/definitions/internal_modules_v2_templates.DeployTemplateRequest"
                         }
                     }
                 ],
@@ -1765,7 +1826,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/docker.ContainerInfo"
+                            "$ref": "#/definitions/serveoapi_internal_modules_v2_docker.ContainerInfo"
                         }
                     },
                     "400": {
@@ -1810,7 +1871,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/users.UserResponse"
+                                "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
                             }
                         }
                     }
@@ -1840,7 +1901,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.CreateUserRequest"
+                            "$ref": "#/definitions/internal_modules_v2_users.CreateUserRequest"
                         }
                     }
                 ],
@@ -1848,7 +1909,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/users.UserResponse"
+                            "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
                         }
                     },
                     "400": {
@@ -1879,7 +1940,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.UserResponse"
+                            "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
                         }
                     }
                 }
@@ -1910,7 +1971,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.UpdatePasswordRequest"
+                            "$ref": "#/definitions/internal_modules_v2_users.UpdatePasswordRequest"
                         }
                     }
                 ],
@@ -2003,7 +2064,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.UpdateUserRequest"
+                            "$ref": "#/definitions/internal_modules_v2_users.UpdateUserRequest"
                         }
                     }
                 ],
@@ -2011,7 +2072,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.UserResponse"
+                            "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
                         }
                     }
                 }
@@ -2019,7 +2080,7 @@
         }
     },
     "definitions": {
-        "apikeys.ApiKeyResponse": {
+        "internal_modules_v2_apikeys.ApiKeyResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2036,7 +2097,7 @@
                 }
             }
         },
-        "apikeys.CreateApiKeyRequest": {
+        "internal_modules_v2_apikeys.CreateApiKeyRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -2047,7 +2108,7 @@
                 }
             }
         },
-        "apikeys.CreateApiKeyResponse": {
+        "internal_modules_v2_apikeys.CreateApiKeyResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2062,7 +2123,7 @@
                 }
             }
         },
-        "auth.LoginRequest": {
+        "internal_modules_v2_auth.LoginRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -2077,7 +2138,7 @@
                 }
             }
         },
-        "auth.LoginResponse": {
+        "internal_modules_v2_auth.LoginResponse": {
             "type": "object",
             "properties": {
                 "token": {
@@ -2085,7 +2146,7 @@
                 }
             }
         },
-        "auth.TicketResponse": {
+        "internal_modules_v2_auth.TicketResponse": {
             "type": "object",
             "properties": {
                 "ticket": {
@@ -2093,7 +2154,7 @@
                 }
             }
         },
-        "backups.BackupInfo": {
+        "internal_modules_v2_backups.BackupInfo": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2107,7 +2168,7 @@
                 }
             }
         },
-        "backups.RestoreRequest": {
+        "internal_modules_v2_backups.RestoreRequest": {
             "type": "object",
             "properties": {
                 "filename": {
@@ -2115,7 +2176,7 @@
                 }
             }
         },
-        "docker.ContainerInfo": {
+        "internal_modules_v2_docker.ContainerInfo": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2150,7 +2211,7 @@
                 }
             }
         },
-        "docker.CreateContainerRequest": {
+        "internal_modules_v2_docker.CreateContainerRequest": {
             "type": "object",
             "properties": {
                 "env": {
@@ -2190,7 +2251,7 @@
                 }
             }
         },
-        "docker.CreateNetworkRequest": {
+        "internal_modules_v2_docker.CreateNetworkRequest": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2207,7 +2268,7 @@
                 }
             }
         },
-        "docker.CreateVolumeRequest": {
+        "internal_modules_v2_docker.CreateVolumeRequest": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2224,7 +2285,7 @@
                 }
             }
         },
-        "docker.DeployStackRequest": {
+        "internal_modules_v2_docker.DeployStackRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -2236,7 +2297,7 @@
                 }
             }
         },
-        "docker.ImageInfo": {
+        "internal_modules_v2_docker.ImageInfo": {
             "type": "object",
             "properties": {
                 "created": {
@@ -2256,7 +2317,7 @@
                 }
             }
         },
-        "docker.NetworkInfo": {
+        "internal_modules_v2_docker.NetworkInfo": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2270,7 +2331,7 @@
                 }
             }
         },
-        "docker.PullImageRequest": {
+        "internal_modules_v2_docker.PullImageRequest": {
             "type": "object",
             "properties": {
                 "image": {
@@ -2279,7 +2340,18 @@
                 }
             }
         },
-        "docker.SystemInfo": {
+        "internal_modules_v2_docker.RenameContainerRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_modules_v2_docker.SystemInfo": {
             "type": "object",
             "properties": {
                 "containers": {
@@ -2305,7 +2377,7 @@
                 }
             }
         },
-        "docker.UpdateContainerRequest": {
+        "internal_modules_v2_docker.UpdateContainerRequest": {
             "type": "object",
             "properties": {
                 "env": {
@@ -2326,7 +2398,7 @@
                 }
             }
         },
-        "docker.VolumeInfo": {
+        "internal_modules_v2_docker.VolumeInfo": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2340,7 +2412,7 @@
                 }
             }
         },
-        "files.FileInfo": {
+        "internal_modules_v2_files.FileInfo": {
             "type": "object",
             "properties": {
                 "is_dir": {
@@ -2361,7 +2433,7 @@
                 }
             }
         },
-        "metadata.MetadataResponse": {
+        "internal_modules_v2_metadata.MetadataResponse": {
             "type": "object",
             "properties": {
                 "api_version": {
@@ -2390,7 +2462,7 @@
                 }
             }
         },
-        "metrics.ContainerStat": {
+        "internal_modules_v2_metrics.ContainerStat": {
             "type": "object",
             "properties": {
                 "block_read": {
@@ -2428,7 +2500,7 @@
                 }
             }
         },
-        "metrics.SystemStat": {
+        "internal_modules_v2_metrics.SystemStat": {
             "type": "object",
             "properties": {
                 "cpu_percent": {
@@ -2460,7 +2532,7 @@
                 }
             }
         },
-        "ovh.OvhMeResponse": {
+        "internal_modules_v2_ovh.OvhMeResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2474,7 +2546,7 @@
                 }
             }
         },
-        "system.SystemResponse": {
+        "internal_modules_v2_system.SystemResponse": {
             "type": "object",
             "properties": {
                 "arch": {
@@ -2521,7 +2593,7 @@
                 }
             }
         },
-        "templates.DeployTemplateRequest": {
+        "internal_modules_v2_templates.DeployTemplateRequest": {
             "type": "object",
             "properties": {
                 "variables": {
@@ -2533,7 +2605,7 @@
                 }
             }
         },
-        "templates.TemplateInfo": {
+        "internal_modules_v2_templates.TemplateInfo": {
             "type": "object",
             "properties": {
                 "category": {
@@ -2547,7 +2619,7 @@
                     "description": "Le payload exact à envoyer à /v2/docker/containers/create",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/docker.CreateContainerRequest"
+                            "$ref": "#/definitions/serveoapi_internal_modules_v2_docker.CreateContainerRequest"
                         }
                     ]
                 },
@@ -2564,12 +2636,12 @@
                     "description": "Variables à demander à l'utilisateur",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/templates.TemplateVariable"
+                        "$ref": "#/definitions/internal_modules_v2_templates.TemplateVariable"
                     }
                 }
             }
         },
-        "templates.TemplateVariable": {
+        "internal_modules_v2_templates.TemplateVariable": {
             "type": "object",
             "properties": {
                 "default": {
@@ -2594,7 +2666,7 @@
                 }
             }
         },
-        "users.CreateUserRequest": {
+        "internal_modules_v2_users.CreateUserRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -2616,7 +2688,7 @@
                 }
             }
         },
-        "users.UpdatePasswordRequest": {
+        "internal_modules_v2_users.UpdatePasswordRequest": {
             "type": "object",
             "required": [
                 "new_password",
@@ -2632,7 +2704,7 @@
                 }
             }
         },
-        "users.UpdateUserRequest": {
+        "internal_modules_v2_users.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "permissions": {
@@ -2647,7 +2719,7 @@
                 }
             }
         },
-        "users.UserResponse": {
+        "internal_modules_v2_users.UserResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2670,6 +2742,81 @@
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "serveoapi_internal_modules_v2_docker.ContainerInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ports": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "state": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "serveoapi_internal_modules_v2_docker.CreateContainerRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "image": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "ports": {
+                    "description": "ex: {\"8080\": \"80\"}",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "restart_policy": {
+                    "type": "string"
+                },
+                "volumes": {
+                    "description": "ex: [\"myvol:/data\", \"/var/serveoapi/data/app:/app\"]",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         }

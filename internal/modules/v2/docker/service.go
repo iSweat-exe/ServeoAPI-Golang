@@ -284,3 +284,7 @@ func (s *DockerService) UpdateContainer(
 		Labels: newConfig.Labels,
 	}, nil
 }
+
+func (s *DockerService) RenameContainer(ctx context.Context, id string, newName string) error {
+	return s.DockerCli.ContainerRename(ctx, id, newName)
+}
