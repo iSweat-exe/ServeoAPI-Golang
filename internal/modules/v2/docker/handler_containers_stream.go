@@ -3,6 +3,7 @@ package docker
 import (
 	"bufio"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"serveoapi/internal/core/response"
@@ -10,6 +11,7 @@ import (
 	"serveoapi/internal/core/stream"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/pkg/stdcopy"
 )
 
 // StreamContainerLogs godoc
@@ -44,16 +46,17 @@ func (h *Handler) StreamContainerLogs(
 
 	stream.SetupSSEHeaders(w)
 
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		// Enlever l'en-tête de 8 bytes des logs docker multiplexés (stdout/stderr)
-		text := scanner.Text()
-		if len(text) > 8 {
-			text = text[8:]
-		}
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		// StdCopy nettoie le multiplex header de 8 bytes de Docker
+		_, _ = stdcopy.StdCopy(pw, pw, reader)
+	}()
 
+	scanner := bufio.NewScanner(pr)
+	for scanner.Scan() {
 		// Encode to json string to escape quotes/newlines for SSE data payload safely
-		jsonBytes, _ := json.Marshal(text)
+		jsonBytes, _ := json.Marshal(scanner.Text())
 		stream.SendSSEEvent(w, string(jsonBytes))
 	}
 	if err := scanner.Err(); err != nil {

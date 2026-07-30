@@ -109,6 +109,7 @@ type CreateContainerRequest struct {
 	Ports         map[string]string `json:"ports"`   // ex: {"8080": "80"}
 	Volumes       []string          `json:"volumes"` // ex: ["myvol:/data", "/var/serveoapi/data/app:/app"]
 	RestartPolicy string            `json:"restart_policy"`
+	Labels        map[string]string `json:"labels"`
 }
 
 // CreateContainer godoc
@@ -146,8 +147,9 @@ func (h *Handler) CreateContainer(
 }
 
 type UpdateContainerRequest struct {
-	Env    []string `json:"env"`
-	Memory int64    `json:"memory"` // En Bytes
+	Env    []string          `json:"env"`
+	Memory int64             `json:"memory"` // En Bytes
+	Ports  map[string]string `json:"ports"`
 }
 
 // UpdateContainer godoc

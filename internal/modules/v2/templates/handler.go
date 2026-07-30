@@ -1,6 +1,8 @@
 package templates
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -9,24 +11,28 @@ import (
 
 	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/response"
+	"serveoapi/internal/modules/v2/docker"
 
 	"gorm.io/gorm"
 )
 
 type Handler struct {
-	DB     *gorm.DB
-	Config *config.Config
+	DB            *gorm.DB
+	Config        *config.Config
+	DockerService *docker.DockerService
 }
 
-// ensureTemplatesDir vérifie si le dossier existe, et sinon, le crée et charge les modèles par défaut.
+// ensureTemplatesDir vérifie si le dossier existe (et le crée au besoin),
+// puis force la mise à jour des modèles par défaut pour appliquer les nouveautés de l'API.
 func (h *Handler) ensureTemplatesDir() error {
-	if _, err := os.Stat(h.Config.TemplatesPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(h.Config.TemplatesPath, 0o755); err != nil {
-			return err
-		}
-		// Écrire quelques valeurs par défaut (Minecraft, Rust, Python, etc.)
-		writeDefaultTemplates(h.Config.TemplatesPath)
+	if err := os.MkdirAll(h.Config.TemplatesPath, 0o755); err != nil {
+		return err
 	}
+
+	//! Force-update : On écrase toujours les modèles par défaut au démarrage
+	//! pour s'assurer qu'ils bénéficient des dernières mises à jour (ex: nouvelles variables d'env).
+	//! Si un utilisateur souhaite modifier un modèle, il est recommandé de le dupliquer (ex: custom.json).
+	writeDefaultTemplates(h.Config.TemplatesPath)
 	return nil
 }
 
@@ -119,6 +125,9 @@ var defaultTemplates = map[string]string{
 				{"name": "MC_TYPE", "label": "Server Type", "description": "PAPER, FORGE, FABRIC, QUILT, VANILLA", "default": "PAPER", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "itzg/minecraft-server",
 				"name": "minecraft-{{id}}",
 				"env": [
@@ -131,7 +140,7 @@ var defaultTemplates = map[string]string{
 				"ports": {
 					"25565": "25565"
 				},
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/minecraft-{{id}}:/data"
 				]
 			}
@@ -148,6 +157,9 @@ var defaultTemplates = map[string]string{
 				{"name": "RUST_IDENTITY", "label": "Server Identity", "description": "Save folder name", "default": "serveo", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "didstopia/rust-server",
 				"name": "rust-{{id}}",
 				"env": [
@@ -159,7 +171,7 @@ var defaultTemplates = map[string]string{
 					"28015": "28015",
 					"28016": "28016"
 				},
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/rust-{{id}}:/steamcmd/rust"
 				]
 			}
@@ -175,6 +187,9 @@ var defaultTemplates = map[string]string{
 				{"name": "TICKRATE", "label": "Tickrate", "description": "64 or 128", "default": "128", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "joaopaulo/csgo-server",
 				"name": "csgo-{{id}}",
 				"env": [
@@ -184,7 +199,7 @@ var defaultTemplates = map[string]string{
 				"ports": {
 					"27015": "27015"
 				},
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/csgo-{{id}}:/home/steam/csgo-dedicated"
 				]
 			}
@@ -201,6 +216,9 @@ var defaultTemplates = map[string]string{
 				{"name": "ADMIN_PASSWORD", "label": "Admin Password", "description": "Password for admin commands", "default": "admin", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "thijsvanloef/palworld-server-docker",
 				"name": "palworld-{{id}}",
 				"env": [
@@ -216,7 +234,7 @@ var defaultTemplates = map[string]string{
 					"8211": "8211/udp",
 					"27015": "27015/udp"
 				},
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/palworld-{{id}}:/palworld"
 				]
 			}
@@ -231,10 +249,13 @@ var defaultTemplates = map[string]string{
 				{"name": "NODE_VERSION", "label": "Node Version", "description": "Docker tag for node (e.g., 18, 20, latest)", "default": "18", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "node:{{NODE_VERSION}}",
 				"name": "node-{{id}}",
 				"cmd": ["tail", "-f", "/dev/null"],
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/node-{{id}}:/app"
 				]
 			}
@@ -249,10 +270,13 @@ var defaultTemplates = map[string]string{
 				{"name": "PYTHON_VERSION", "label": "Python Version", "description": "Docker tag for python (e.g., 3.11, 3.12)", "default": "3.11", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "python:{{PYTHON_VERSION}}",
 				"name": "python-{{id}}",
 				"cmd": ["tail", "-f", "/dev/null"],
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/python-{{id}}:/app"
 				]
 			}
@@ -267,10 +291,13 @@ var defaultTemplates = map[string]string{
 				{"name": "RUST_VERSION", "label": "Rust Version", "description": "Docker tag for rust (e.g., latest, 1.75)", "default": "latest", "required": true}
 			],
 			"docker": {
+				"labels": {
+					"serveo.template": "{{id}}"
+				},
 				"image": "rust:{{RUST_VERSION}}",
 				"name": "rustlang-{{id}}",
 				"cmd": ["tail", "-f", "/dev/null"],
-				"bind_mounts": [
+				"volumes": [
 					"/var/serveoapi/data/rustlang-{{id}}:/app"
 				]
 			}
@@ -282,4 +309,92 @@ func writeDefaultTemplates(path string) {
 	for name, content := range defaultTemplates {
 		_ = os.WriteFile(filepath.Join(path, name), []byte(content), 0o644)
 	}
+}
+
+// DeployTemplate godoc
+// @Summary      Deploy a Container from Template
+// @Description  Reads a template, interpolates variables, and creates a Docker container
+// @Tags         templates
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id   path      string  true  "Template ID"
+// @Param        body body DeployTemplateRequest true "Variables configuration"
+// @Success      201  {object}  docker.ContainerInfo
+// @Failure      400,404,500 {string} string
+// @Router       /v2/templates/{id}/deploy [post]
+func (h *Handler) DeployTemplate(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req DeployTemplateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	cleanPath := filepath.Clean(id + ".json")
+	if strings.Contains(cleanPath, "..") || strings.Contains(cleanPath, "/") ||
+		strings.Contains(cleanPath, "\\") {
+		response.SendError(w, http.StatusBadRequest, "Invalid template ID")
+		return
+	}
+
+	fullPath := filepath.Join(h.Config.TemplatesPath, cleanPath)
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		response.SendError(w, http.StatusNotFound, "Template not found")
+		return
+	}
+
+	var partialTpl TemplateInfo
+	_ = json.Unmarshal(data, &partialTpl)
+
+	tplStr := string(data)
+
+	// Inject variables using default values if not provided in the request
+	for _, v := range partialTpl.Variables {
+		val := v.Default
+		if req.Variables != nil {
+			if provided, ok := req.Variables[v.Name]; ok {
+				val = provided
+			}
+		}
+		tplStr = strings.ReplaceAll(tplStr, "{{"+v.Name+"}}", val)
+	}
+
+	// Inject random ID
+	randID := generateRandomID(8)
+	tplStr = strings.ReplaceAll(tplStr, "{{id}}", randID)
+
+	var tplInfo TemplateInfo
+	if err := json.Unmarshal([]byte(tplStr), &tplInfo); err != nil {
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to parse interpolated template: "+err.Error(),
+		)
+		return
+	}
+
+	// The frontend shouldn't be sending the Docker payload anymore.
+	// We directly call the DockerService to deploy.
+	containerInfo, err := h.DockerService.CreateContainer(r.Context(), tplInfo.Docker)
+	if err != nil {
+		if strings.Contains(err.Error(), "Security Error") {
+			response.SendError(w, http.StatusBadRequest, err.Error())
+		} else {
+			response.SendError(w, http.StatusInternalServerError, "Docker error: "+err.Error())
+		}
+		return
+	}
+
+	response.SendJSON(w, http.StatusCreated, containerInfo)
+}
+
+func generateRandomID(length int) string {
+	bytes := make([]byte, length/2)
+	if _, err := rand.Read(bytes); err != nil {
+		return "abcd1234" // fallback
+	}
+	return hex.EncodeToString(bytes)
 }

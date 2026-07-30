@@ -14,14 +14,14 @@ func CORS(next http.Handler) http.Handler {
 	) {
 		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 		if allowedOrigins == "" {
-			allowedOrigins = "http://localhost:3000"
+			allowedOrigins = "http://localhost:5173"
 		}
 
 		origin := r.Header.Get("Origin")
 		if origin != "" && strings.Contains(allowedOrigins, origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		} else if allowedOrigins != "*" {
-			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		} else {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}

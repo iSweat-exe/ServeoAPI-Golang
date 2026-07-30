@@ -3,11 +3,13 @@ package docker
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 
 	"serveoapi/internal/core/config"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -35,12 +37,25 @@ func (s *DockerService) ListContainers(
 		if len(id) > 12 {
 			id = id[:12]
 		}
+
+		var ports []Port
+		for _, p := range c.Ports {
+			ports = append(ports, Port{
+				IP:          p.IP,
+				PrivatePort: p.PrivatePort,
+				PublicPort:  p.PublicPort,
+				Type:        p.Type,
+			})
+		}
+
 		resp = append(resp, ContainerInfo{
 			ID:     id,
 			Names:  c.Names,
 			Image:  c.Image,
 			State:  c.State,
 			Status: c.Status,
+			Labels: c.Labels,
+			Ports:  ports,
 		})
 	}
 	if resp == nil {
@@ -136,6 +151,7 @@ func (s *DockerService) CreateContainer(
 		Image:        req.Image,
 		Env:          req.Env,
 		ExposedPorts: exposedPorts,
+		Labels:       req.Labels,
 	}
 
 	resp, err := s.DockerCli.ContainerCreate(
@@ -147,7 +163,32 @@ func (s *DockerService) CreateContainer(
 		req.Name,
 	)
 	if err != nil {
-		return ContainerInfo{}, err
+		if strings.Contains(err.Error(), "No such image") ||
+			strings.Contains(err.Error(), "not found") {
+			// Pull de l'image automatisé si manquante
+			pullResp, pullErr := s.DockerCli.ImagePull(ctx, req.Image, image.PullOptions{})
+			if pullErr != nil {
+				return ContainerInfo{}, pullErr
+			}
+			// Bloquer jusqu'à ce que le pull soit terminé (lire tout le flux)
+			_, _ = io.Copy(io.Discard, pullResp)
+			pullResp.Close()
+
+			// Retenter la création
+			resp, err = s.DockerCli.ContainerCreate(
+				ctx,
+				containerConfig,
+				&hostConfig,
+				nil,
+				nil,
+				req.Name,
+			)
+			if err != nil {
+				return ContainerInfo{}, err
+			}
+		} else {
+			return ContainerInfo{}, err
+		}
 	}
 
 	if err := s.DockerCli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
@@ -165,6 +206,7 @@ func (s *DockerService) CreateContainer(
 		Image:  inspect.Config.Image,
 		State:  inspect.State.Status,
 		Status: inspect.State.Status,
+		Labels: inspect.Config.Labels,
 	}, nil
 }
 
@@ -187,6 +229,24 @@ func (s *DockerService) UpdateContainer(
 	}
 	if req.Memory > 0 {
 		newHostConfig.Resources.Memory = req.Memory
+	}
+	if req.Ports != nil {
+		portBindings := nat.PortMap{}
+		exposedPorts := nat.PortSet{}
+		for hostPort, containerPort := range req.Ports {
+			port, err := nat.NewPort("tcp", containerPort)
+			if err == nil {
+				exposedPorts[port] = struct{}{}
+				portBindings[port] = []nat.PortBinding{
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: hostPort,
+					},
+				}
+			}
+		}
+		newConfig.ExposedPorts = exposedPorts
+		newHostConfig.PortBindings = portBindings
 	}
 
 	_ = s.DockerCli.ContainerStop(ctx, id, container.StopOptions{})
@@ -221,5 +281,6 @@ func (s *DockerService) UpdateContainer(
 		Image:  newConfig.Image,
 		State:  "running",
 		Status: "running",
+		Labels: newConfig.Labels,
 	}, nil
 }

@@ -44,7 +44,7 @@ func New(cfg *config.Config, dockerCli *client.Client) http.Handler {
 	docker.RegisterRoutes(mux, authMiddleware, database.DB, cfg, dockerCli)
 	files.RegisterRoutes(mux, authMiddleware, database.DB, cfg, dockerCli)
 	users.RegisterRoutes(mux, authMiddleware, database.DB)
-	templates.RegisterRoutes(mux, authMiddleware, database.DB, cfg)
+	templates.RegisterRoutes(mux, authMiddleware, database.DB, cfg, dockerCli)
 	ovh.RegisterRoutes(mux, authMiddleware, database.DB, cfg)
 	mcp.RegisterRoutes(mux, authMiddleware, database.DB, cfg)
 	apikeys.RegisterRoutes(mux, authMiddleware, database.DB)

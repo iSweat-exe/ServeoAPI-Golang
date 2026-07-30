@@ -23,3 +23,8 @@ type TemplateVariable struct {
 	Default     string `json:"default"`     // Valeur par défaut
 	Required    bool   `json:"required"`    // Est-ce obligatoire ?
 }
+
+// DeployTemplateRequest représente la requête du frontend pour déployer un serveur
+type DeployTemplateRequest struct {
+	Variables map[string]string `json:"variables"` // Valeurs des variables (ex: {"EULA": "TRUE"})
+}
