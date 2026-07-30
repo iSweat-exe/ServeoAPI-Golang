@@ -182,6 +182,6 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.DB.Delete(&auth.User{}, id)
+	h.DB.Unscoped().Delete(&auth.User{}, id)
 	w.WriteHeader(http.StatusNoContent)
 }
