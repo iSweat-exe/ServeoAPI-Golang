@@ -1,14 +1,16 @@
 package docker
 
 import (
-	"serveoapi/internal/core/response"
 	"bufio"
 	"context"
 	"encoding/json"
 	"net/http"
 
-	"github.com/docker/docker/api/types/image"
+	"serveoapi/internal/core/response"
+
 	"serveoapi/internal/core/stream"
+
+	"github.com/docker/docker/api/types/image"
 )
 
 // GetImages godoc
@@ -123,4 +125,3 @@ func (h *Handler) DeleteImage(
 
 	w.WriteHeader(http.StatusNoContent)
 }
-

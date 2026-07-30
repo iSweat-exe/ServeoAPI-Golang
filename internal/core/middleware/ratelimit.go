@@ -15,8 +15,10 @@ type visitor struct {
 }
 
 // visitors keeps track of rate limiters per IP address.
-var visitors = make(map[string]*visitor)
-var mu sync.Mutex
+var (
+	visitors = make(map[string]*visitor)
+	mu       sync.Mutex
+)
 
 // init démarre une goroutine pour nettoyer la map et éviter les fuites de mémoire.
 func init() {

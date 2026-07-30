@@ -102,7 +102,9 @@ func (s *DockerService) CreateContainer(
 
 		if strings.Contains(src, "/") || strings.Contains(src, "\\") {
 			if !strings.HasPrefix(src, allowedRoot) {
-				return ContainerInfo{}, errors.New("Security Error: Bind mounts are restricted to " + allowedRoot)
+				return ContainerInfo{}, errors.New(
+					"Security Error: Bind mounts are restricted to " + allowedRoot,
+				)
 			}
 		}
 		hostConfig.Binds = append(hostConfig.Binds, v)

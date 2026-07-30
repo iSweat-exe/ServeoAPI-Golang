@@ -2,11 +2,22 @@ package metadata
 
 import (
 	"net/http"
-	"serveoapi/internal/core/middleware"
+
 	"gorm.io/gorm"
+
+	"serveoapi/internal/core/middleware"
 )
 
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB) {
+func RegisterRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	db *gorm.DB,
+) {
 	h := &Handler{DB: db}
-	mux.Handle("GET /v2/metadata/", authMiddleware(middleware.RequirePermission("metadata.read", http.HandlerFunc(h.GetMetadata))))
+	mux.Handle(
+		"GET /v2/metadata/",
+		authMiddleware(
+			middleware.RequirePermission("metadata.read", http.HandlerFunc(h.GetMetadata)),
+		),
+	)
 }

@@ -9,6 +9,7 @@ import (
 	"serveoapi/internal/core/response"
 	"serveoapi/internal/core/validation"
 	"serveoapi/internal/modules/v2/auth"
+
 	"gorm.io/gorm"
 )
 
@@ -17,8 +18,8 @@ type Handler struct {
 }
 
 type CreateUserRequest struct {
-	Username       string `json:"username" validate:"required"`
-	Password       string `json:"password" validate:"required,min=8"`
+	Username       string `json:"username"        validate:"required"`
+	Password       string `json:"password"        validate:"required,min=8"`
 	Permissions    string `json:"permissions"`
 	ProfilePicture string `json:"profile_picture"`
 }

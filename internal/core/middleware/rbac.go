@@ -48,7 +48,11 @@ func RequirePermission(requiredPerm string, next http.Handler) http.Handler {
 		}
 
 		if !hasAccess {
-			http.Error(w, "Access Denied: Missing permission '"+requiredPerm+"'", http.StatusForbidden)
+			http.Error(
+				w,
+				"Access Denied: Missing permission '"+requiredPerm+"'",
+				http.StatusForbidden,
+			)
 			return
 		}
 

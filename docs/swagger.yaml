@@ -85,12 +85,12 @@ definitions:
       ports:
         additionalProperties:
           type: string
-        description: 'e.g. {"8080": "80"}'
+        description: 'ex: {"8080": "80"}'
         type: object
       restart_policy:
         type: string
       volumes:
-        description: e.g. ["myvol:/data", "/var/serveoapi/data/app:/app"]
+        description: 'ex: ["myvol:/data", "/var/serveoapi/data/app:/app"]'
         items:
           type: string
         type: array
@@ -177,7 +177,7 @@ definitions:
           type: string
         type: array
       memory:
-        description: In bytes
+        description: En Bytes
         type: integer
     type: object
   docker.VolumeInfo:
@@ -311,14 +311,14 @@ definitions:
   templates.TemplateInfo:
     properties:
       category:
-        description: e.g., "game", "database", "app", "lang"
+        description: 'ex: "game", "database", "app", "lang"'
         type: string
       description:
         type: string
       docker:
         allOf:
         - $ref: '#/definitions/docker.CreateContainerRequest'
-        description: The exact payload to send to /v2/docker/containers/create
+        description: Le payload exact à envoyer à /v2/docker/containers/create
       id:
         type: string
       logo:
@@ -326,7 +326,7 @@ definitions:
       name:
         type: string
       variables:
-        description: Variables to prompt the user for
+        description: Variables à demander à l'utilisateur
         items:
           $ref: '#/definitions/templates.TemplateVariable'
         type: array
@@ -334,19 +334,19 @@ definitions:
   templates.TemplateVariable:
     properties:
       default:
-        description: Default value
+        description: Valeur par défaut
         type: string
       description:
-        description: UI description
+        description: Description pour l'UI
         type: string
       label:
-        description: The UI label (e.g., "Server Name")
+        description: 'Le label pour l''UI (ex: "Server Name")'
         type: string
       name:
-        description: The placeholder name used in the Docker config (e.g., "SERVER_NAME")
+        description: 'Le nom du placeholder utilisé dans la config Docker (ex: "SERVER_NAME")'
         type: string
       required:
-        description: Is it mandatory?
+        description: Est-ce obligatoire ?
         type: boolean
     type: object
   users.CreateUserRequest:
@@ -382,7 +382,7 @@ definitions:
       profile_picture:
         type: string
       status:
-        description: allow banning or forcing offline
+        description: permet de bannir ou forcer la déconnexion
         type: string
     type: object
   users.UserResponse:
@@ -414,6 +414,42 @@ info:
   title: ServeoAPI
   version: "2.0"
 paths:
+  /health:
+    get:
+      description: Verifies the health of the API (Database and Docker Socket)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - system
+  /prometheus:
+    get:
+      description: Exposes Prometheus metrics for the API (requires JWT auth)
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Prometheus metrics
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Prometheus Metrics
+      tags:
+      - system
   /v2/apikeys/:
     get:
       description: Get all API Keys for the authenticated user

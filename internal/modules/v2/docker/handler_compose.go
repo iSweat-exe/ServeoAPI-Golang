@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"serveoapi/internal/core/response"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"serveoapi/internal/core/response"
 
 	"gopkg.in/yaml.v3"
 )
@@ -114,10 +115,17 @@ func validateVolume(
 
 	if strings.Contains(src, "/") || strings.Contains(src, "\\") || strings.HasPrefix(src, ".") {
 		if strings.HasPrefix(src, ".") {
-			return fmt.Errorf("Security Error: Relative paths in volumes are forbidden in service '%s'", srvName)
+			return fmt.Errorf(
+				"Security Error: Relative paths in volumes are forbidden in service '%s'",
+				srvName,
+			)
 		}
 		if !strings.HasPrefix(src, allowedRoot) {
-			return fmt.Errorf("Security Error: Bind mounts are restricted to %s in service '%s'", allowedRoot, srvName)
+			return fmt.Errorf(
+				"Security Error: Bind mounts are restricted to %s in service '%s'",
+				allowedRoot,
+				srvName,
+			)
 		}
 	}
 	return nil
@@ -129,12 +137,14 @@ func (h *Handler) executeDeploy(
 	r *http.Request,
 	req DeployStackRequest,
 ) {
-
 	// 2. Écrire le YAML dans un fichier temporaire
 	tmpDir := os.TempDir()
-	fileName := filepath.Join(tmpDir, "serveo_stack_"+req.Name+"_"+time.Now().Format("20060102150405")+".yml")
+	fileName := filepath.Join(
+		tmpDir,
+		"serveo_stack_"+req.Name+"_"+time.Now().Format("20060102150405")+".yml",
+	)
 
-	if err := os.WriteFile(fileName, []byte(req.Content), 0644); err != nil {
+	if err := os.WriteFile(fileName, []byte(req.Content), 0o644); err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Failed to write temp compose file")
 		return
 	}
@@ -143,10 +153,24 @@ func (h *Handler) executeDeploy(
 	// mais pour cet endpoint nous exécutons juste 'up -d' et laissons l'utilisateur gérer via CLI. Le fichier reste dans /tmp.
 
 	// 3. Exécuter `docker compose up -d`
-	cmd := exec.CommandContext(r.Context(), "docker", "compose", "-f", fileName, "-p", req.Name, "up", "-d")
+	cmd := exec.CommandContext(
+		r.Context(),
+		"docker",
+		"compose",
+		"-f",
+		fileName,
+		"-p",
+		req.Name,
+		"up",
+		"-d",
+	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Docker Compose failed: "+string(out))
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Docker Compose failed: "+string(out),
+		)
 		return
 	}
 
@@ -157,4 +181,3 @@ func (h *Handler) executeDeploy(
 		"output":  string(out),
 	})
 }
-

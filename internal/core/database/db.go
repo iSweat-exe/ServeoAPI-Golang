@@ -1,7 +1,7 @@
 package database
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -23,6 +23,6 @@ func InitDatabase(dbPath string) error {
 	// Enable WAL mode for concurrency
 	DB.Exec("PRAGMA journal_mode=WAL;")
 
-	log.Println("Database connection successfully established.")
+	slog.Info("Database connection successfully established.")
 	return nil
 }

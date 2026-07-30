@@ -2,10 +2,12 @@ package docker
 
 import (
 	"net/http"
-	"serveoapi/internal/core/config"
-	"serveoapi/internal/core/middleware"
+
 	"github.com/docker/docker/client"
 	"gorm.io/gorm"
+
+	"serveoapi/internal/core/config"
+	"serveoapi/internal/core/middleware"
 )
 
 func RegisterRoutes(
@@ -29,18 +31,42 @@ func RegisterRoutes(
 
 	// Containers
 	registerRoute("GET /v2/docker/containers/", "docker.containers.read", h.GetContainers)
-	registerRoute("POST /v2/docker/containers/create", "docker.containers.write", h.CreateContainer)
+	registerRoute(
+		"POST /v2/docker/containers/create",
+		"docker.containers.write",
+		h.CreateContainer,
+	)
 	registerRoute("GET /v2/docker/containers/{id}", "docker.containers.read", h.InspectContainer)
-	registerRoute("PUT /v2/docker/containers/{id}/update", "docker.containers.write", h.UpdateContainer)
-	registerRoute("POST /v2/docker/containers/{id}/{action}", "docker.containers.write", h.ActionContainer)
-	registerRoute("DELETE /v2/docker/containers/{id}", "docker.containers.delete", h.DeleteContainer)
+	registerRoute(
+		"PUT /v2/docker/containers/{id}/update",
+		"docker.containers.write",
+		h.UpdateContainer,
+	)
+	registerRoute(
+		"POST /v2/docker/containers/{id}/{action}",
+		"docker.containers.write",
+		h.ActionContainer,
+	)
+	registerRoute(
+		"DELETE /v2/docker/containers/{id}",
+		"docker.containers.delete",
+		h.DeleteContainer,
+	)
 
 	// Terminal (Interactive WebSockets, Auth is handled inside the WS)
 	mux.Handle("GET /v2/docker/containers/{id}/exec", http.HandlerFunc(h.TerminalHandler))
 
 	// Containers Streaming
-	registerRoute("GET /v2/docker/containers/{id}/logs", "docker.containers.read", h.StreamContainerLogs)
-	registerRoute("GET /v2/docker/containers/{id}/stats", "docker.containers.read", h.StreamContainerStats)
+	registerRoute(
+		"GET /v2/docker/containers/{id}/logs",
+		"docker.containers.read",
+		h.StreamContainerLogs,
+	)
+	registerRoute(
+		"GET /v2/docker/containers/{id}/stats",
+		"docker.containers.read",
+		h.StreamContainerStats,
+	)
 
 	// Images
 	registerRoute("GET /v2/docker/images/", "docker.images.read", h.GetImages)

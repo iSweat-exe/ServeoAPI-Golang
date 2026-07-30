@@ -3,7 +3,7 @@ package middleware
 import (
 	"bufio"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -38,40 +38,28 @@ func (rw *responseWriter) Unwrap() http.ResponseWriter {
 	return rw.ResponseWriter
 }
 
-const (
-	colorReset  = "\033[0m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorCyan   = "\033[36m"
-)
-
+// Logger is a middleware that logs HTTP requests with structured data.
 func Logger(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(
-		w http.ResponseWriter,
-		r *http.Request,
-	) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// Default status is 200 OK if WriteHeader is never called
-		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		// Reuse responseWriter if already wrapped (e.g. by Metrics)
+		rw, ok := w.(*responseWriter)
+		if !ok {
+			rw = &responseWriter{ResponseWriter: w, status: http.StatusOK}
+			w = rw
+		}
 
-		log.Printf("--> %s %s", r.Method, r.URL.Path)
-
-		next.ServeHTTP(rw, r)
+		next.ServeHTTP(w, r)
 
 		duration := time.Since(start)
 
-		color := colorGreen
-		switch {
-		case rw.status >= 500:
-			color = colorRed
-		case rw.status >= 400:
-			color = colorYellow
-		case rw.status >= 300:
-			color = colorCyan
-		}
-
-		log.Printf("<-- %s %s %s%d%s in %v", r.Method, r.URL.Path, color, rw.status, colorReset, duration)
+		slog.Info("HTTP Request",
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", rw.status),
+			slog.Duration("duration", duration),
+			slog.String("remote_addr", r.RemoteAddr),
+		)
 	})
 }

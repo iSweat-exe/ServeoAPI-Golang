@@ -3,10 +3,10 @@ package apikeys
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-    "fmt"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +25,13 @@ func TestCreateApiKeySuccess(t *testing.T) {
 	}
 	body, _ := json.Marshal(reqBody)
 
-	req := testutil.NewAuthenticatedRequest("POST", "/v2/apikeys/create", bytes.NewReader(body), 1, nil)
+	req := testutil.NewAuthenticatedRequest(
+		"POST",
+		"/v2/apikeys/create",
+		bytes.NewReader(body),
+		1,
+		nil,
+	)
 	rr := httptest.NewRecorder()
 
 	h.CreateApiKey(rr, req)
@@ -38,7 +44,7 @@ func TestCreateApiKeySuccess(t *testing.T) {
 
 	assert.Equal(t, "Test Key", response.Name)
 	assert.NotEmpty(t, response.Token)
-	
+
 	// Check DB
 	var apiKey ApiKey
 	db.First(&apiKey, response.ID)
@@ -59,7 +65,13 @@ func TestCreateApiKeyMissingName(t *testing.T) {
 	}
 	body, _ := json.Marshal(reqBody)
 
-	req := testutil.NewAuthenticatedRequest("POST", "/v2/apikeys/create", bytes.NewReader(body), 1, nil)
+	req := testutil.NewAuthenticatedRequest(
+		"POST",
+		"/v2/apikeys/create",
+		bytes.NewReader(body),
+		1,
+		nil,
+	)
 	rr := httptest.NewRecorder()
 
 	h.CreateApiKey(rr, req)
@@ -104,8 +116,14 @@ func TestRevokeApiKeySuccess(t *testing.T) {
 
 	h := &Handler{DB: db}
 
-	req := testutil.NewAuthenticatedRequest("DELETE", "/v2/apikeys/" + fmt.Sprint(key.ID), nil, 1, nil)
-    req.SetPathValue("id", fmt.Sprint(key.ID))
+	req := testutil.NewAuthenticatedRequest(
+		"DELETE",
+		"/v2/apikeys/"+fmt.Sprint(key.ID),
+		nil,
+		1,
+		nil,
+	)
+	req.SetPathValue("id", fmt.Sprint(key.ID))
 	rr := httptest.NewRecorder()
 
 	h.RevokeApiKey(rr, req)
@@ -122,15 +140,21 @@ func TestRevokeApiKeyNotFound(t *testing.T) {
 	db, err := testutil.SetupTestDB(&ApiKey{})
 	require.NoError(t, err)
 
-	// Key belongs to user 2
+	// l'utilisateur 2 créer une clé
 	key := ApiKey{UserID: 2, Name: "Not mine", Prefix: "srv_test", TokenHash: "hash_not_mine"}
 	db.Create(&key)
 
 	h := &Handler{DB: db}
 
-	// User 1 tries to delete User 2's key
-	req := testutil.NewAuthenticatedRequest("DELETE", "/v2/apikeys/" + fmt.Sprint(key.ID), nil, 1, nil)
-    req.SetPathValue("id", fmt.Sprint(key.ID))
+	// l'utilisateur 1 essaie de supprimer la clé de l'utilisateur 2
+	req := testutil.NewAuthenticatedRequest(
+		"DELETE",
+		"/v2/apikeys/"+fmt.Sprint(key.ID),
+		nil,
+		1,
+		nil,
+	)
+	req.SetPathValue("id", fmt.Sprint(key.ID))
 	rr := httptest.NewRecorder()
 
 	h.RevokeApiKey(rr, req)

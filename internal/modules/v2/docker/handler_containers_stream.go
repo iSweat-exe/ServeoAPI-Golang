@@ -1,13 +1,15 @@
 package docker
 
 import (
-	"serveoapi/internal/core/response"
 	"bufio"
 	"encoding/json"
 	"net/http"
 
-	"github.com/docker/docker/api/types/container"
+	"serveoapi/internal/core/response"
+
 	"serveoapi/internal/core/stream"
+
+	"github.com/docker/docker/api/types/container"
 )
 
 // StreamContainerLogs godoc
@@ -92,4 +94,3 @@ func (h *Handler) StreamContainerStats(
 		stream.SendSSEEvent(w, "error: "+err.Error())
 	}
 }
-

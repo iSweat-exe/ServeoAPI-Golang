@@ -1,10 +1,11 @@
 package docker
 
 import (
-	"serveoapi/internal/core/response"
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"serveoapi/internal/core/response"
 
 	"github.com/docker/docker/api/types/network"
 )
@@ -139,4 +140,3 @@ func (h *Handler) CreateNetwork(
 		Driver: net.Driver,
 	})
 }
-

@@ -3,13 +3,13 @@ package metrics
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"runtime"
 	"time"
 
 	"serveoapi/internal/core/database"
+
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -25,7 +25,7 @@ func StartMetricsWorker(ctx context.Context, interval time.Duration, dockerCli *
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("Metrics worker stopping...")
+				slog.Info("Metrics worker stopping...")
 				return
 			case <-ticker.C:
 				collectSystemMetrics()
@@ -48,7 +48,7 @@ func collectSystemMetrics() {
 		path = "C:\\"
 	}
 	d, _ := disk.Usage(path)
-	
+
 	n, _ := net.IOCounters(false)
 	var tx, rx float64
 	if len(n) > 0 {
@@ -77,7 +77,7 @@ func collectSystemMetrics() {
 	}
 
 	if err := database.DB.Create(&stat).Error; err != nil {
-		log.Printf("Failed to save system metrics: %v", err)
+		slog.Error("Failed to save system metrics", "error", err)
 	}
 
 	// Nettoyage des anciens enregistrements (plus de 24h)
@@ -124,7 +124,7 @@ func collectContainerMetrics(dockerCli *client.Client) {
 	ctx := context.Background()
 	containers, err := dockerCli.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
-		log.Printf("Failed to list containers for metrics: %v", err)
+		slog.Error("Failed to list containers for metrics", "error", err)
 		return
 	}
 
@@ -136,7 +136,7 @@ func collectContainerMetrics(dockerCli *client.Client) {
 	database.DB.Where("timestamp < ?", time.Now().Add(-24*time.Hour)).Delete(&ContainerStat{})
 }
 
-func processContainerStats(ctx context.Context, cli *client.Client, c types.Container) {
+func processContainerStats(ctx context.Context, cli *client.Client, c container.Summary) {
 	stats, err := cli.ContainerStats(ctx, c.ID, false)
 	if err != nil {
 		return
@@ -148,11 +148,17 @@ func processContainerStats(ctx context.Context, cli *client.Client, c types.Cont
 		return
 	}
 
-	cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage) - float64(v.PreCPUStats.CPUUsage.TotalUsage)
+	cpuDelta := float64(
+		v.CPUStats.CPUUsage.TotalUsage,
+	) - float64(
+		v.PreCPUStats.CPUUsage.TotalUsage,
+	)
 	systemDelta := float64(v.CPUStats.SystemUsage) - float64(v.PreCPUStats.SystemUsage)
 	cpuPercent := 0.0
 	if systemDelta > 0.0 && cpuDelta > 0.0 {
-		cpuPercent = (cpuDelta / systemDelta) * float64(len(v.CPUStats.CPUUsage.PercpuUsage)) * 100.0
+		cpuPercent = (cpuDelta / systemDelta) * float64(
+			len(v.CPUStats.CPUUsage.PercpuUsage),
+		) * 100.0
 	}
 
 	memUsage := float64(v.MemoryStats.Usage) - float64(v.MemoryStats.Stats["cache"])
@@ -196,6 +202,6 @@ func processContainerStats(ctx context.Context, cli *client.Client, c types.Cont
 	}
 
 	if err := database.DB.Create(&stat).Error; err != nil {
-		log.Printf("Failed to save container metrics: %v", err)
+		slog.Error("Failed to save container metrics", "error", err)
 	}
 }

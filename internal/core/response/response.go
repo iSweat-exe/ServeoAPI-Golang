@@ -2,7 +2,7 @@ package response
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -16,7 +16,7 @@ func SendJSON(
 	w.WriteHeader(status)
 	if payload != nil {
 		if err := json.NewEncoder(w).Encode(payload); err != nil {
-			log.Printf("Failed to encode JSON response: %v", err)
+			slog.Error("Failed to encode JSON response", "error", err)
 		}
 	}
 }

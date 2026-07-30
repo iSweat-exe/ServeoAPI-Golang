@@ -1,14 +1,16 @@
 package docker
 
 import (
-	"serveoapi/internal/core/response"
 	"context"
 	"encoding/json"
 	"net/http"
 
+	"serveoapi/internal/core/response"
+
+	"serveoapi/internal/core/stream"
+
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
-	"serveoapi/internal/core/stream"
 )
 
 // GetSystemInfo godoc
@@ -96,4 +98,3 @@ func (h *Handler) StreamSystemEvents(
 		}
 	}
 }
-

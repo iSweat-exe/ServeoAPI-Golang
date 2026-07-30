@@ -6,10 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"serveoapi/internal/core/contextkeys"
 	"serveoapi/internal/core/response"
 	"serveoapi/internal/core/validation"
+
+	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -84,7 +85,7 @@ func (h *Handler) Login(
 		"sub":           user.ID,
 		"username":      user.Username,
 		"permissions":   user.Permissions,
-		"token_version": user.TokenVersion, // Add token_version to claims
+		"token_version": user.TokenVersion,                     // Add token_version to claims
 		"exp":           time.Now().Add(time.Hour * 24).Unix(), // Expires in 24 hours
 	})
 

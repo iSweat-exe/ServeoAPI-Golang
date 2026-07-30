@@ -50,7 +50,11 @@ func (h *Handler) GetSystemMetricsHistory(w http.ResponseWriter, r *http.Request
 	since := time.Now().Add(-24 * time.Hour)
 
 	if err := database.DB.Where("timestamp >= ?", since).Order("timestamp asc").Find(&stats).Error; err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Failed to retrieve system metrics history")
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to retrieve system metrics history",
+		)
 		return
 	}
 

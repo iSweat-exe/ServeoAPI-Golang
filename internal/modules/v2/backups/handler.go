@@ -58,7 +58,7 @@ func (h *Handler) CreateBackup(
 	}
 
 	backupsDir := h.getBackupsDir()
-	if err := os.MkdirAll(backupsDir, 0755); err != nil {
+	if err := os.MkdirAll(backupsDir, 0o755); err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Failed to create backups directory")
 		return
 	}
@@ -68,13 +68,21 @@ func (h *Handler) CreateBackup(
 	destPath := filepath.Join(backupsDir, filename)
 
 	if err := zipDir(srcDir, destPath); err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Failed to create backup archive: "+err.Error())
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to create backup archive: "+err.Error(),
+		)
 		return
 	}
 
 	info, err := os.Stat(destPath)
 	if err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Failed to stat new backup: "+err.Error())
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to stat new backup: "+err.Error(),
+		)
 		return
 	}
 
@@ -126,7 +134,8 @@ func (h *Handler) ListBackups(
 	var backups []BackupInfo
 	prefix := server + "_"
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasPrefix(entry.Name(), prefix) && strings.HasSuffix(entry.Name(), ".zip") {
+		if !entry.IsDir() && strings.HasPrefix(entry.Name(), prefix) &&
+			strings.HasSuffix(entry.Name(), ".zip") {
 			info, err := entry.Info()
 			if err == nil {
 				backups = append(backups, BackupInfo{
@@ -176,7 +185,8 @@ func (h *Handler) RestoreBackup(
 		return
 	}
 
-	if strings.Contains(req.Filename, "/") || strings.Contains(req.Filename, "\\") || req.Filename == ".." {
+	if strings.Contains(req.Filename, "/") || strings.Contains(req.Filename, "\\") ||
+		req.Filename == ".." {
 		response.SendError(w, http.StatusBadRequest, "Invalid filename")
 		return
 	}
@@ -189,10 +199,14 @@ func (h *Handler) RestoreBackup(
 
 	destDir := filepath.Join(h.Config.AllowedMountRoot, server)
 	// Créer s'il n'existe pas
-	os.MkdirAll(destDir, 0755)
+	os.MkdirAll(destDir, 0o755)
 
 	if err := unzip(zipPath, destDir); err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Failed to restore backup: "+err.Error())
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to restore backup: "+err.Error(),
+		)
 		return
 	}
 

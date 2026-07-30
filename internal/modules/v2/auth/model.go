@@ -1,23 +1,24 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
+
+	"serveoapi/internal/core/database"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"serveoapi/internal/core/database"
 )
 
 // User représente un compte utilisateur dans la DB.
 type User struct {
 	gorm.Model
 	Username       string `gorm:"uniqueIndex;not null" json:"username"`
-	Password       string `gorm:"not null" json:"-"`                // Le hash du mot de passe
-	Permissions    string `gorm:"type:text" json:"permissions"`     // Permissions séparées par des virgules
-	ProfilePicture string `gorm:"type:text" json:"profile_picture"` // URL ou chemin de l'image
-	Status         string `gorm:"default:'offline'" json:"status"`  // online, offline, away
-	LastConnection *int64 `json:"last_connection"`                  // Timestamp UNIX
-	TokenVersion   int    `gorm:"default:0" json:"-"`               // Invalidate tokens on password change
+	Password       string `gorm:"not null"             json:"-"`               // Le hash du mot de passe
+	Permissions    string `gorm:"type:text"            json:"permissions"`     // Permissions séparées par des virgules
+	ProfilePicture string `gorm:"type:text"            json:"profile_picture"` // URL ou chemin de l'image
+	Status         string `gorm:"default:'offline'"    json:"status"`          // online, offline, away
+	LastConnection *int64 `                            json:"last_connection"` // Timestamp UNIX
+	TokenVersion   int    `gorm:"default:0"            json:"-"`               // Invalidate tokens on password change
 }
 
 // CheckPassword vérifie si le mot de passe fourni correspond au hash.
@@ -46,7 +47,7 @@ func MigrateDatabase() error {
 	var count int64
 	database.DB.Model(&User{}).Count(&count)
 	if count == 0 {
-		log.Println("Aucun utilisateur trouvé. Création de l'utilisateur par défaut 'admin'...")
+		slog.Info("Aucun utilisateur trouvé. Création de l'utilisateur par défaut 'admin'...")
 		defaultAdmin := User{
 			Username:    "admin",
 			Permissions: "*",
@@ -55,7 +56,7 @@ func MigrateDatabase() error {
 			return err
 		}
 		database.DB.Create(&defaultAdmin)
-		log.Println("Utilisateur 'admin' (password: 'root') créé avec succès.")
+		slog.Info("Utilisateur 'admin' (password: 'root') créé avec succès.")
 	}
 
 	return nil

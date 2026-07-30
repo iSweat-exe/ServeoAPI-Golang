@@ -131,18 +131,30 @@ func (h *Handler) TerminalHandler(
 	ws.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, msgBytes, err := ws.ReadMessage()
 	if err != nil {
-		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(4001, "Auth timeout or error"), time.Now().Add(time.Second))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(4001, "Auth timeout or error"),
+			time.Now().Add(time.Second),
+		)
 		return
 	}
 
 	var authMsg TerminalAuthMessage
 	if err := json.Unmarshal(msgBytes, &authMsg); err != nil || authMsg.Type != "auth" {
-		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(4001, "Expected auth message"), time.Now().Add(time.Second))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(4001, "Expected auth message"),
+			time.Now().Add(time.Second),
+		)
 		return
 	}
 
 	if !hasContainerWritePermission(authMsg.Token) {
-		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(4003, "Forbidden: Missing docker.containers.write"), time.Now().Add(time.Second))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(4003, "Forbidden: Missing docker.containers.write"),
+			time.Now().Add(time.Second),
+		)
 		return
 	}
 
@@ -166,14 +178,26 @@ func (h *Handler) TerminalHandler(
 
 	execResp, err := cli.ContainerExecCreate(ctx, containerID, execConfig)
 	if err != nil {
-		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(1011, "Exec create failed"), time.Now().Add(time.Second))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(1011, "Exec create failed"),
+			time.Now().Add(time.Second),
+		)
 		return
 	}
 
 	// 5. S'attacher à l'Exec
-	hijackedResp, err := cli.ContainerExecAttach(ctx, execResp.ID, container.ExecStartOptions{Tty: true})
+	hijackedResp, err := cli.ContainerExecAttach(
+		ctx,
+		execResp.ID,
+		container.ExecStartOptions{Tty: true},
+	)
 	if err != nil {
-		ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(1011, "Exec attach failed"), time.Now().Add(time.Second))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(1011, "Exec attach failed"),
+			time.Now().Add(time.Second),
+		)
 		return
 	}
 

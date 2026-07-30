@@ -24,6 +24,63 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/health": {
+            "get": {
+                "description": "Verifies the health of the API (Database and Docker Socket)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health Check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/prometheus": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Exposes Prometheus metrics for the API (requires JWT auth)",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Prometheus Metrics",
+                "responses": {
+                    "200": {
+                        "description": "Prometheus metrics",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/apikeys/": {
             "get": {
                 "security": [
@@ -1968,7 +2025,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ports": {
-                    "description": "e.g. {\"8080\": \"80\"}",
+                    "description": "ex: {\"8080\": \"80\"}",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -1978,7 +2035,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "volumes": {
-                    "description": "e.g. [\"myvol:/data\", \"/var/serveoapi/data/app:/app\"]",
+                    "description": "ex: [\"myvol:/data\", \"/var/serveoapi/data/app:/app\"]",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -2111,7 +2168,7 @@ const docTemplate = `{
                     }
                 },
                 "memory": {
-                    "description": "In bytes",
+                    "description": "En Bytes",
                     "type": "integer"
                 }
             }
@@ -2315,14 +2372,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
-                    "description": "e.g., \"game\", \"database\", \"app\", \"lang\"",
+                    "description": "ex: \"game\", \"database\", \"app\", \"lang\"",
                     "type": "string"
                 },
                 "description": {
                     "type": "string"
                 },
                 "docker": {
-                    "description": "The exact payload to send to /v2/docker/containers/create",
+                    "description": "Le payload exact à envoyer à /v2/docker/containers/create",
                     "allOf": [
                         {
                             "$ref": "#/definitions/docker.CreateContainerRequest"
@@ -2339,7 +2396,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "variables": {
-                    "description": "Variables to prompt the user for",
+                    "description": "Variables à demander à l'utilisateur",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/templates.TemplateVariable"
@@ -2351,23 +2408,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "default": {
-                    "description": "Default value",
+                    "description": "Valeur par défaut",
                     "type": "string"
                 },
                 "description": {
-                    "description": "UI description",
+                    "description": "Description pour l'UI",
                     "type": "string"
                 },
                 "label": {
-                    "description": "The UI label (e.g., \"Server Name\")",
+                    "description": "Le label pour l'UI (ex: \"Server Name\")",
                     "type": "string"
                 },
                 "name": {
-                    "description": "The placeholder name used in the Docker config (e.g., \"SERVER_NAME\")",
+                    "description": "Le nom du placeholder utilisé dans la config Docker (ex: \"SERVER_NAME\")",
                     "type": "string"
                 },
                 "required": {
-                    "description": "Is it mandatory?",
+                    "description": "Est-ce obligatoire ?",
                     "type": "boolean"
                 }
             }
@@ -2420,7 +2477,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "allow banning or forcing offline",
+                    "description": "permet de bannir ou forcer la déconnexion",
                     "type": "string"
                 }
             }

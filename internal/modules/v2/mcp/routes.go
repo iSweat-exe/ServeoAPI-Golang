@@ -5,11 +5,17 @@ import (
 
 	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/middleware"
+
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes enregistre les routes MCP
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB, cfg *config.Config) {
+func RegisterRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	db *gorm.DB,
+	cfg *config.Config,
+) {
 	// Initialise le serveur MCP (singleton)
 	InitServer(cfg)
 

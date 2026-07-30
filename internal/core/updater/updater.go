@@ -3,13 +3,15 @@ package updater
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 
-	"github.com/minio/selfupdate"
 	"serveoapi/internal/core/config"
+
+	"github.com/minio/selfupdate"
 )
 
 const repoAPI = "https://api.github.com/repos/iSweat-exe/ServeoAPI-Golang/releases/latest"
@@ -26,29 +28,32 @@ type GithubAsset struct {
 
 // RunCheckAndUpdate checks for a new release and applies the update if one is found.
 func RunCheckAndUpdate() {
-	log.Printf("Checking for updates (Current version: %s)...", config.AppVersion)
+	slog.Info("Checking for updates", "current_version", config.AppVersion)
 
 	resp, err := http.Get(repoAPI)
 	if err != nil {
-		log.Fatalf("❌ Failed to contact GitHub API: %v", err)
+		slog.Error("Failed to contact GitHub API", "error", err)
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("❌ GitHub API returned status: %s", resp.Status)
+		slog.Error("GitHub API returned non-OK status", "status", resp.Status)
+		os.Exit(1)
 	}
 
 	var release GithubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		log.Fatalf("❌ Failed to parse GitHub API response: %v", err)
+		slog.Error("Failed to parse GitHub API response", "error", err)
+		os.Exit(1)
 	}
 
 	if release.TagName == config.AppVersion {
-		log.Printf("ServeoAPI is already up-to-date (%s)", config.AppVersion)
+		slog.Info("ServeoAPI is already up-to-date", "version", config.AppVersion)
 		return
 	}
 
-	log.Printf("New version found: %s! Looking for compatible binary...", release.TagName)
+	slog.Info("New version found! Looking for compatible binary...", "version", release.TagName)
 
 	// Build expected asset name, e.g. "serveoapi_linux_amd64"
 	expectedName := fmt.Sprintf("serveoapi_%s_%s", runtime.GOOS, runtime.GOARCH)
@@ -65,26 +70,36 @@ func RunCheckAndUpdate() {
 	}
 
 	if downloadURL == "" {
-		log.Fatalf("❌ No compatible binary found for %s in release %s", expectedName, release.TagName)
+		slog.Error(
+			"No compatible binary found",
+			"expected",
+			expectedName,
+			"release",
+			release.TagName,
+		)
+		os.Exit(1)
 	}
 
-	log.Printf("Downloading %s...", downloadURL)
+	slog.Info("Downloading update...", "url", downloadURL)
 	downloadResp, err := http.Get(downloadURL)
 	if err != nil {
-		log.Fatalf("❌ Failed to download update: %v", err)
+		slog.Error("Failed to download update", "error", err)
+		os.Exit(1)
 	}
 	defer downloadResp.Body.Close()
 
 	if downloadResp.StatusCode != http.StatusOK {
-		log.Fatalf("❌ Failed to download update, status: %s", downloadResp.Status)
+		slog.Error("Failed to download update, bad status", "status", downloadResp.Status)
+		os.Exit(1)
 	}
 
-	log.Println("Applying update...")
+	slog.Info("Applying update...")
 	err = selfupdate.Apply(downloadResp.Body, selfupdate.Options{})
 	if err != nil {
-		log.Fatalf("❌ Update failed: %v", err)
+		slog.Error("Update failed", "error", err)
+		os.Exit(1)
 	}
 
-	log.Printf("🎉 Update successful! ServeoAPI is now at version %s.", release.TagName)
-	log.Println("Restart the service to use the new version.")
+	slog.Info("Update successful!", "new_version", release.TagName)
+	slog.Info("Restart the service to use the new version.")
 }

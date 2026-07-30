@@ -29,7 +29,11 @@ func JWTAuth(next http.Handler) http.Handler {
 		}
 
 		if tokenString == "" {
-			response.SendError(w, http.StatusUnauthorized, "Missing Authorization header or token parameter")
+			response.SendError(
+				w,
+				http.StatusUnauthorized,
+				"Missing Authorization header or token parameter",
+			)
 			return
 		}
 

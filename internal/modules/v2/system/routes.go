@@ -2,11 +2,20 @@ package system
 
 import (
 	"net/http"
-	"serveoapi/internal/core/middleware"
+
 	"gorm.io/gorm"
+
+	"serveoapi/internal/core/middleware"
 )
 
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB) {
+func RegisterRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	db *gorm.DB,
+) {
 	h := &Handler{DB: db}
-	mux.Handle("GET /v2/system/", authMiddleware(middleware.RequirePermission("system.read", http.HandlerFunc(h.GetSystem))))
+	mux.Handle(
+		"GET /v2/system/",
+		authMiddleware(middleware.RequirePermission("system.read", http.HandlerFunc(h.GetSystem))),
+	)
 }

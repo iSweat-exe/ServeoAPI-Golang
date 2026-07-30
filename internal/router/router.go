@@ -3,8 +3,10 @@ package router
 import (
 	"net/http"
 
-	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/docker/docker/client"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "serveoapi/docs" // Documentation générée par Swagger
 	"serveoapi/internal/core/config"
@@ -15,6 +17,7 @@ import (
 	"serveoapi/internal/modules/v2/backups"
 	"serveoapi/internal/modules/v2/docker"
 	"serveoapi/internal/modules/v2/files"
+	"serveoapi/internal/modules/v2/health"
 	"serveoapi/internal/modules/v2/mcp"
 	"serveoapi/internal/modules/v2/metadata"
 	"serveoapi/internal/modules/v2/metrics"
@@ -47,10 +50,25 @@ func New(cfg *config.Config, dockerCli *client.Client) http.Handler {
 	apikeys.RegisterRoutes(mux, authMiddleware, database.DB)
 	metrics.RegisterRoutes(mux, authMiddleware)
 	backups.RegisterRoutes(mux, authMiddleware, cfg)
+	health.RegisterRoutes(mux, database.DB, dockerCli)
+
+	// Métriques Prometheus sécurisées avec JWT auth pour éviter les fuites
+	mux.Handle("GET /prometheus", authMiddleware(promhttp.Handler()))
 
 	mux.Handle("GET /LLMs/", http.StripPrefix("/LLMs/", http.FileServer(http.Dir("LLMs"))))
 
 	handler := middleware.RateLimit(mux)
 	handler = middleware.CORS(handler)
+	handler = middleware.Metrics(handler)
 	return middleware.Logger(handler)
 }
+
+// prometheusDocs est une fonction factice utilisée uniquement pour générer la documentation Swagger de la route /prometheus
+// @Summary      Prometheus Metrics
+// @Description  Exposes Prometheus metrics for the API (requires JWT auth)
+// @Tags         system
+// @Produce      text/plain
+// @Security     ApiKeyAuth
+// @Success      200  {string}  string "Prometheus metrics"
+// @Router       /prometheus [get]
+func prometheusDocs() {}

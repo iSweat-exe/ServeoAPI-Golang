@@ -23,7 +23,10 @@ type Handler struct {
 var validServerRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // resolveSafeRoot vérifie que le serveur existe et retourne un *os.Root pour une résolution de chemin atomique et sécurisée
-func (h *Handler) resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.Root, string, bool) {
+func (h *Handler) resolveSafeRoot(
+	w http.ResponseWriter,
+	r *http.Request,
+) (*os.Root, string, bool) {
 	serverName := r.PathValue("server")
 	if !validServerRegex.MatchString(serverName) {
 		response.SendError(w, http.StatusBadRequest, "Invalid server name format")
@@ -48,7 +51,11 @@ func (h *Handler) resolveSafeRoot(w http.ResponseWriter, r *http.Request) (*os.R
 	// Cela ferme entièrement la fenêtre de vulnérabilité TOCTOU pour les répertoires intermédiaires
 	root, err := os.OpenRoot(rootPath)
 	if err != nil {
-		response.SendError(w, http.StatusForbidden, "Security violation: Cannot open root directory safely")
+		response.SendError(
+			w,
+			http.StatusForbidden,
+			"Security violation: Cannot open root directory safely",
+		)
 		return nil, "", false
 	}
 
@@ -159,9 +166,13 @@ func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
 // @Router       /v2/files/{server}/write [post]
 func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
 	h.withSafeRoot(w, r, func(root *os.Root, reqPath string) {
-		f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 		if err != nil {
-			response.SendError(w, http.StatusInternalServerError, "Failed to open file for writing")
+			response.SendError(
+				w,
+				http.StatusInternalServerError,
+				"Failed to open file for writing",
+			)
 			return
 		}
 		defer f.Close()
@@ -215,7 +226,7 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	finalPath := filepath.Join(reqPath, cleanFileName)
 
 	// Création atomique de fichier au sein de la racine sécurisée
-	f, err := root.OpenFile(finalPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	f, err := root.OpenFile(finalPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Cannot create file: "+err.Error())
 		return

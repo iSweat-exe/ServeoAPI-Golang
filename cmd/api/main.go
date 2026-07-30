@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -40,6 +40,10 @@ import (
 // @name Authorization
 
 func main() {
+	// Configure le logger JSON par défaut
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	// Intercepteur CLI pour la mise à jour automatique
 	if len(os.Args) > 1 && os.Args[1] == "update" {
 		updater.RunCheckAndUpdate()
@@ -53,22 +57,27 @@ func main() {
 
 	// Initialisation de la base de données
 	if err := database.InitDatabase("serveo.db"); err != nil {
-		log.Fatalf("Impossible d'initialiser la base de données: %v", err)
+		slog.Error("Impossible d'initialiser la base de données", "error", err)
+		os.Exit(1)
 	}
 	if err := auth.MigrateDatabase(); err != nil {
-		log.Fatalf("Impossible de migrer la base de données Auth: %v", err)
+		slog.Error("Impossible de migrer la base de données Auth", "error", err)
+		os.Exit(1)
 	}
 	if err := apikeys.MigrateDatabase(); err != nil {
-		log.Fatalf("Impossible de migrer la base de données ApiKeys: %v", err)
+		slog.Error("Impossible de migrer la base de données ApiKeys", "error", err)
+		os.Exit(1)
 	}
 	if err := metrics.MigrateDatabase(); err != nil {
-		log.Fatalf("Impossible de migrer la base de données Metrics: %v", err)
+		slog.Error("Impossible de migrer la base de données Metrics", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialisation du client Docker
 	dockerCli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		log.Fatalf("Impossible d'initialiser le client Docker: %v", err)
+		slog.Error("Impossible d'initialiser le client Docker", "error", err)
+		os.Exit(1)
 	}
 	defer dockerCli.Close()
 

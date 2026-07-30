@@ -38,10 +38,10 @@ func loadCooldowns() {
 func saveCooldowns() {
 	cooldownMutex.Lock()
 	defer cooldownMutex.Unlock()
-	os.MkdirAll("data", 0755)
+	os.MkdirAll("data", 0o755)
 	b, err := json.Marshal(lastRebootMap)
 	if err == nil {
-		os.WriteFile(cooldownFile, b, 0644)
+		os.WriteFile(cooldownFile, b, 0o644)
 	}
 }
 
@@ -197,7 +197,9 @@ func registerOvhRebootTool() {
 		cooldownMutex.Unlock()
 
 		if exists && time.Since(lastReboot) < 15*time.Minute {
-			return mcp.NewToolResultError("cooldown active: cannot reboot this server again so soon"), nil
+			return mcp.NewToolResultError(
+				"cooldown active: cannot reboot this server again so soon",
+			), nil
 		}
 
 		err := ovhClient.Post(fmt.Sprintf("/dedicated/server/%s/reboot", serviceName), nil, nil)

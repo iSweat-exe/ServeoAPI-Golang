@@ -9,6 +9,7 @@ import (
 
 	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/response"
+
 	"gorm.io/gorm"
 )
 
@@ -20,7 +21,7 @@ type Handler struct {
 // ensureTemplatesDir vérifie si le dossier existe, et sinon, le crée et charge les modèles par défaut.
 func (h *Handler) ensureTemplatesDir() error {
 	if _, err := os.Stat(h.Config.TemplatesPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(h.Config.TemplatesPath, 0755); err != nil {
+		if err := os.MkdirAll(h.Config.TemplatesPath, 0o755); err != nil {
 			return err
 		}
 		// Écrire quelques valeurs par défaut (Minecraft, Rust, Python, etc.)
@@ -87,7 +88,8 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 
 	// Empêcher la traversée de chemin
 	cleanPath := filepath.Clean(id + ".json")
-	if strings.Contains(cleanPath, "..") || strings.Contains(cleanPath, "/") || strings.Contains(cleanPath, "\\") {
+	if strings.Contains(cleanPath, "..") || strings.Contains(cleanPath, "/") ||
+		strings.Contains(cleanPath, "\\") {
 		response.SendError(w, http.StatusBadRequest, "Invalid template ID")
 		return
 	}
@@ -104,7 +106,7 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 }
 
 var defaultTemplates = map[string]string{
-		"minecraft.json": `{
+	"minecraft.json": `{
 			"id": "minecraft",
 			"name": "Minecraft Server",
 			"description": "High performance Minecraft server (supports Paper, Forge, Fabric, etc.)",
@@ -134,7 +136,7 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-		"rust.json": `{
+	"rust.json": `{
 			"id": "rust",
 			"name": "Rust Server",
 			"description": "Official Rust Dedicated Server.",
@@ -162,7 +164,7 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-		"csgo.json": `{
+	"csgo.json": `{
 			"id": "csgo",
 			"name": "CS:GO Server",
 			"description": "Counter-Strike: Global Offensive Dedicated Server.",
@@ -187,7 +189,7 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-		"palworld.json": `{
+	"palworld.json": `{
 			"id": "palworld",
 			"name": "Palworld Server",
 			"description": "Palworld Dedicated Server.",
@@ -219,7 +221,7 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-		"nodejs.json": `{
+	"nodejs.json": `{
 			"id": "nodejs",
 			"name": "Node.js",
 			"description": "Node.js execution environment.",
@@ -237,7 +239,7 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-		"python.json": `{
+	"python.json": `{
 			"id": "python",
 			"name": "Python",
 			"description": "Python execution environment.",
@@ -255,7 +257,7 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-		"rustlang.json": `{
+	"rustlang.json": `{
 			"id": "rustlang",
 			"name": "Rust (Lang)",
 			"description": "Rust programming language environment.",
@@ -273,11 +275,11 @@ var defaultTemplates = map[string]string{
 				]
 			}
 		}`,
-	}
+}
 
 // Fonction utilitaire pour écrire les modèles par défaut
 func writeDefaultTemplates(path string) {
 	for name, content := range defaultTemplates {
-		os.WriteFile(filepath.Join(path, name), []byte(content), 0644)
+		os.WriteFile(filepath.Join(path, name), []byte(content), 0o644)
 	}
 }

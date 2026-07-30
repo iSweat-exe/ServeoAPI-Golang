@@ -1,7 +1,7 @@
 package ovh
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/ovh/go-ovh/ovh"
 
@@ -14,7 +14,7 @@ var apiClient *ovh.Client
 func InitClient(cfg *config.Config) error {
 	// Sans identifiants, on ignore l'initialisation (le module sera désactivé)
 	if cfg.OvhEndpoint == "" || cfg.OvhAppKey == "" {
-		log.Println("OVH Module disabled (missing credentials in config)")
+		slog.Info("OVH Module disabled (missing credentials in config)")
 		return nil
 	}
 
@@ -24,13 +24,12 @@ func InitClient(cfg *config.Config) error {
 		cfg.OvhAppSecret,
 		cfg.OvhConsumerKey,
 	)
-
 	if err != nil {
 		return err
 	}
 
 	apiClient = client
-	log.Println("OVH Module initialized successfully")
+	slog.Info("OVH Module initialized successfully")
 	return nil
 }
 

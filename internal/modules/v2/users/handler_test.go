@@ -58,7 +58,13 @@ func TestUpdateMePasswordSuccess(t *testing.T) {
 	}
 	body, _ := json.Marshal(reqBody)
 
-	req := testutil.NewAuthenticatedRequest("PUT", "/v2/users/me/password", bytes.NewReader(body), user.ID, nil)
+	req := testutil.NewAuthenticatedRequest(
+		"PUT",
+		"/v2/users/me/password",
+		bytes.NewReader(body),
+		user.ID,
+		nil,
+	)
 	rr := httptest.NewRecorder()
 
 	h.UpdateMePassword(rr, req)
@@ -69,7 +75,7 @@ func TestUpdateMePasswordSuccess(t *testing.T) {
 	var updatedUser auth.User
 	db.First(&updatedUser, user.ID)
 	assert.Equal(t, 2, updatedUser.TokenVersion)
-	
+
 	// Vérifier si le mot de passe a bien été changé
 	assert.NoError(t, updatedUser.CheckPassword("newpassword123"))
 }
@@ -93,7 +99,13 @@ func TestUpdateMePasswordInvalidInput(t *testing.T) {
 	}
 	body, _ := json.Marshal(reqBody)
 
-	req := testutil.NewAuthenticatedRequest("PUT", "/v2/users/me/password", bytes.NewReader(body), user.ID, nil)
+	req := testutil.NewAuthenticatedRequest(
+		"PUT",
+		"/v2/users/me/password",
+		bytes.NewReader(body),
+		user.ID,
+		nil,
+	)
 	rr := httptest.NewRecorder()
 
 	h.UpdateMePassword(rr, req)

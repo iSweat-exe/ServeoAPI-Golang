@@ -30,7 +30,10 @@ func Load() *Config {
 		SQLitePath:       "serveo.db",
 		AllowedMountRoot: "/var/serveoapi/data/",
 		TemplatesPath:    getEnv("TEMPLATES_PATH", "./data/templates"),
-		APIToken:         getEnv("API_TOKEN", DefaultAPIToken), // Bounded to version.go for CI/CD injection
+		APIToken: getEnv(
+			"API_TOKEN",
+			DefaultAPIToken,
+		), // Bounded to version.go for CI/CD injection
 
 		OvhEndpoint:    getEnv("OVH_ENDPOINT", ""), // e.g. "ovh-eu"
 		OvhAppKey:      getEnv("OVH_APP_KEY", ""),

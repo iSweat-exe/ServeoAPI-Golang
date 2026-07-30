@@ -10,6 +10,7 @@ import (
 	"serveoapi/internal/core/contextkeys"
 	"serveoapi/internal/core/response"
 	"serveoapi/internal/modules/v2/common"
+
 	"gorm.io/gorm"
 )
 
@@ -165,5 +166,9 @@ func (h *Handler) RevokeApiKey(
 		return
 	}
 
-	response.SendJSON(w, http.StatusOK, map[string]string{"message": "API Key revoked successfully"})
+	response.SendJSON(
+		w,
+		http.StatusOK,
+		map[string]string{"message": "API Key revoked successfully"},
+	)
 }

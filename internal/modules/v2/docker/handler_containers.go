@@ -1,11 +1,11 @@
 package docker
 
 import (
-	"serveoapi/internal/core/response"
 	"encoding/json"
 	"net/http"
-
 	"strings"
+
+	"serveoapi/internal/core/response"
 )
 
 type Handler struct {
@@ -24,7 +24,11 @@ type Handler struct {
 func (h *Handler) GetContainers(w http.ResponseWriter, r *http.Request) {
 	containers, err := h.Service.ListContainers(r.Context())
 	if err != nil {
-		response.SendError(w, http.StatusInternalServerError, "Failed to list containers: "+err.Error())
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to list containers: "+err.Error(),
+		)
 		return
 	}
 
@@ -185,4 +189,3 @@ func (h *Handler) UpdateContainer(
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(info)
 }
-

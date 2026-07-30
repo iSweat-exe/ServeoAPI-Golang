@@ -2,8 +2,10 @@ package ovh
 
 import (
 	"net/http"
-	"serveoapi/internal/core/response"
+
 	"gorm.io/gorm"
+
+	"serveoapi/internal/core/response"
 )
 
 type Handler struct {
@@ -20,7 +22,11 @@ type OvhMeResponse struct {
 // CheckConfig est une fonction utilitaire pour vérifier si le module est activé
 func checkConfig(w http.ResponseWriter) bool {
 	if GetClient() == nil {
-		response.SendError(w, http.StatusServiceUnavailable, "OVH Module is not configured on this API")
+		response.SendError(
+			w,
+			http.StatusServiceUnavailable,
+			"OVH Module is not configured on this API",
+		)
 		return false
 	}
 	return true

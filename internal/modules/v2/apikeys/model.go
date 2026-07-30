@@ -8,12 +8,12 @@ import (
 
 // ApiKey represents a Personal Access Token generated for AI/External use
 type ApiKey struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	UserID    uint      `gorm:"index;not null" json:"user_id"`
-	Name      string    `gorm:"not null" json:"name"`
+	ID        uint      `gorm:"primaryKey"           json:"id"`
+	UserID    uint      `gorm:"index;not null"       json:"user_id"`
+	Name      string    `gorm:"not null"             json:"name"`
 	TokenHash string    `gorm:"uniqueIndex;not null" json:"-"`
-	Prefix    string    `gorm:"not null" json:"prefix"` // Used to identify the token (e.g. first 4 chars)
-	CreatedAt time.Time `json:"created_at"`
+	Prefix    string    `gorm:"not null"             json:"prefix"` // Used to identify the token (e.g. first 4 chars)
+	CreatedAt time.Time `                            json:"created_at"`
 }
 
 // MigrateDatabase applies migrations for apikeys module

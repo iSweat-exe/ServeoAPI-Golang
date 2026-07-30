@@ -5,12 +5,19 @@ import (
 
 	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/middleware"
+
 	"github.com/docker/docker/client"
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes configure les endpoints de l'API pour le module gestionnaire de fichiers
-func RegisterRoutes(mux *http.ServeMux, authMiddleware func(http.Handler) http.Handler, db *gorm.DB, cfg *config.Config, dockerCli *client.Client) {
+func RegisterRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	db *gorm.DB,
+	cfg *config.Config,
+	dockerCli *client.Client,
+) {
 	h := &Handler{DB: db, Config: cfg, DockerCli: dockerCli}
 	registerRoute := func(methodPath, perm string, handler http.HandlerFunc) {
 		mux.Handle(methodPath, authMiddleware(middleware.RequirePermission(perm, handler)))
