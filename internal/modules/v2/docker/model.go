@@ -1,12 +1,5 @@
 package docker
 
-type Port struct {
-	IP          string `json:"ip,omitempty"`
-	PrivatePort uint16 `json:"private_port"`
-	PublicPort  uint16 `json:"public_port,omitempty"`
-	Type        string `json:"type"`
-}
-
 type ContainerInfo struct {
 	ID     string            `json:"id"`
 	Names  []string          `json:"names"`
@@ -14,7 +7,7 @@ type ContainerInfo struct {
 	State  string            `json:"state"`
 	Status string            `json:"status"`
 	Labels map[string]string `json:"labels"`
-	Ports  []Port            `json:"ports"`
+	Ports  map[string]string `json:"ports"`
 }
 
 type ImageInfo struct {

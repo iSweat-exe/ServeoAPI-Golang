@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 
 	"serveoapi/internal/core/config"
@@ -38,14 +39,11 @@ func (s *DockerService) ListContainers(
 			id = id[:12]
 		}
 
-		var ports []Port
+		ports := make(map[string]string)
 		for _, p := range c.Ports {
-			ports = append(ports, Port{
-				IP:          p.IP,
-				PrivatePort: p.PrivatePort,
-				PublicPort:  p.PublicPort,
-				Type:        p.Type,
-			})
+			if p.PublicPort != 0 {
+				ports[strconv.Itoa(int(p.PublicPort))] = strconv.Itoa(int(p.PrivatePort))
+			}
 		}
 
 		resp = append(resp, ContainerInfo{
