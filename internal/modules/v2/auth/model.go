@@ -5,6 +5,7 @@ import (
 
 	"serveoapi/internal/core/database"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -12,13 +13,22 @@ import (
 // User représente un compte utilisateur dans la DB.
 type User struct {
 	gorm.Model
-	Username       string `gorm:"uniqueIndex;not null" json:"username"`
-	Password       string `gorm:"not null"             json:"-"`               // Le hash du mot de passe
-	Permissions    string `gorm:"type:text"            json:"permissions"`     // Permissions séparées par des virgules
-	ProfilePicture string `gorm:"type:text"            json:"profile_picture"` // URL ou chemin de l'image
-	Status         string `gorm:"default:'offline'"    json:"status"`          // online, offline, away
-	LastConnection *int64 `                            json:"last_connection"` // Timestamp UNIX
-	TokenVersion   int    `gorm:"default:0"            json:"-"`               // Invalidate tokens on password change
+	UUID           string `gorm:"type:char(36);uniqueIndex" json:"uuid"`
+	Username       string `gorm:"uniqueIndex;not null"      json:"username"`
+	Password       string `gorm:"not null"                  json:"-"`               // Le hash du mot de passe
+	Permissions    string `gorm:"type:text"                 json:"permissions"`     // Permissions séparées par des virgules
+	ProfilePicture string `gorm:"type:text"                 json:"profile_picture"` // URL ou chemin de l'image
+	Status         string `gorm:"default:'offline'"         json:"status"`          // online, offline, away
+	LastConnection *int64 `                                 json:"last_connection"` // Timestamp UNIX
+	TokenVersion   int    `gorm:"default:0"                 json:"-"`               // Invalidate tokens on password change
+}
+
+// BeforeCreate will set a UUID rather than numeric ID.
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.UUID == "" {
+		u.UUID = uuid.New().String()
+	}
+	return
 }
 
 // CheckPassword vérifie si le mot de passe fourni correspond au hash.

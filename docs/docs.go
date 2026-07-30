@@ -2673,6 +2673,9 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
                 }
             }
         }

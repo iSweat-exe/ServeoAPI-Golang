@@ -150,6 +150,8 @@ func (s *DockerService) CreateContainer(
 		Env:          req.Env,
 		ExposedPorts: exposedPorts,
 		Labels:       req.Labels,
+		Tty:          true,
+		OpenStdin:    true,
 	}
 
 	resp, err := s.DockerCli.ContainerCreate(

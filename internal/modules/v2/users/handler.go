@@ -32,6 +32,7 @@ type UpdateUserRequest struct {
 
 type UserResponse struct {
 	ID             uint   `json:"id"`
+	UUID           string `json:"uuid"`
 	Username       string `json:"username"`
 	Permissions    string `json:"permissions"`
 	ProfilePicture string `json:"profile_picture"`
@@ -42,6 +43,7 @@ type UserResponse struct {
 func mapToResponse(u auth.User) UserResponse {
 	return UserResponse{
 		ID:             u.ID,
+		UUID:           u.UUID,
 		Username:       u.Username,
 		Permissions:    u.Permissions,
 		ProfilePicture: u.ProfilePicture,

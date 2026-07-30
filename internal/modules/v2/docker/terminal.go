@@ -11,6 +11,7 @@ import (
 	"serveoapi/internal/core/middleware"
 	"serveoapi/internal/modules/v2/auth"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/gorilla/websocket"
@@ -133,6 +134,11 @@ func (h *Handler) TerminalHandler(
 		return
 	}
 
+	mode := r.URL.Query().Get("mode")
+	if mode == "" {
+		mode = "exec"
+	}
+
 	cli := h.Service.DockerCli
 
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -145,40 +151,61 @@ func (h *Handler) TerminalHandler(
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	shell := probeShell(ctx, cli, containerID)
+	var hijackedResp types.HijackedResponse
+	var errAttach error
+	var resizeTarget string
 
-	// 4. Créer un Exec interactif
-	execConfig := container.ExecOptions{
-		AttachStdin:  true,
-		AttachStdout: true,
-		AttachStderr: true, // Docker fusionne ceci dans stdout quand Tty=true
-		Tty:          true,
-		Cmd:          []string{shell},
-	}
+	if mode == "console" {
+		hijackedResp, errAttach = cli.ContainerAttach(ctx, containerID, container.AttachOptions{
+			Stream: true,
+			Stdin:  true,
+			Stdout: true,
+			Stderr: true,
+		})
+		if errAttach != nil {
+			_ = ws.WriteControl(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(1011, "Container attach failed"),
+				time.Now().Add(time.Second),
+			)
+			return
+		}
+		resizeTarget = containerID
+	} else {
+		shell := probeShell(ctx, cli, containerID)
 
-	execResp, err := cli.ContainerExecCreate(ctx, containerID, execConfig)
-	if err != nil {
-		_ = ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(1011, "Exec create failed"),
-			time.Now().Add(time.Second),
+		execConfig := container.ExecOptions{
+			AttachStdin:  true,
+			AttachStdout: true,
+			AttachStderr: true,
+			Tty:          true,
+			Cmd:          []string{shell},
+		}
+
+		execResp, errExec := cli.ContainerExecCreate(ctx, containerID, execConfig)
+		if errExec != nil {
+			_ = ws.WriteControl(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(1011, "Exec create failed"),
+				time.Now().Add(time.Second),
+			)
+			return
+		}
+
+		hijackedResp, errAttach = cli.ContainerExecAttach(
+			ctx,
+			execResp.ID,
+			container.ExecStartOptions{Tty: true},
 		)
-		return
-	}
-
-	// 5. S'attacher à l'Exec
-	hijackedResp, err := cli.ContainerExecAttach(
-		ctx,
-		execResp.ID,
-		container.ExecStartOptions{Tty: true},
-	)
-	if err != nil {
-		_ = ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(1011, "Exec attach failed"),
-			time.Now().Add(time.Second),
-		)
-		return
+		if errAttach != nil {
+			_ = ws.WriteControl(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(1011, "Exec attach failed"),
+				time.Now().Add(time.Second),
+			)
+			return
+		}
+		resizeTarget = execResp.ID
 	}
 
 	// CRITIQUE : Nettoyage pour éviter les fuites de ressources
@@ -189,7 +216,15 @@ func (h *Handler) TerminalHandler(
 	errChan := make(chan error, 2)
 
 	// Goroutine 1 : Lecture depuis WebSocket (Contrôles JSON) -> Écriture vers Docker Stdin & Redimensionnement
-	go handleTerminalInput(ctx, ws, cli, execResp.ID, hijackedResp.Conn, errChan)
+	go handleTerminalInput(
+		ctx,
+		ws,
+		cli,
+		resizeTarget,
+		mode == "console",
+		hijackedResp.Conn,
+		errChan,
+	)
 
 	// Goroutine 2 : Lecture depuis Docker (Stream brut) -> Écriture vers WebSocket (Binaire)
 	go handleTerminalOutput(ws, hijackedResp.Reader, errChan)
@@ -214,7 +249,8 @@ func handleTerminalInput(
 	ctx context.Context,
 	ws *websocket.Conn,
 	cli *client.Client,
-	execID string,
+	resizeTarget string,
+	isConsole bool,
 	conn io.Writer,
 	errChan chan<- error,
 ) {
@@ -235,10 +271,17 @@ func handleTerminalInput(
 						return
 					}
 				case "resize":
-					_ = cli.ContainerExecResize(ctx, execID, container.ResizeOptions{
-						Height: ctrl.Rows,
-						Width:  ctrl.Cols,
-					})
+					if isConsole {
+						_ = cli.ContainerResize(ctx, resizeTarget, container.ResizeOptions{
+							Height: ctrl.Rows,
+							Width:  ctrl.Cols,
+						})
+					} else {
+						_ = cli.ContainerExecResize(ctx, resizeTarget, container.ResizeOptions{
+							Height: ctrl.Rows,
+							Width:  ctrl.Cols,
+						})
+					}
 				}
 			}
 		}

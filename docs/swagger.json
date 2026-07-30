@@ -2667,6 +2667,9 @@
                 },
                 "username": {
                     "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
                 }
             }
         }
