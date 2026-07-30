@@ -1,10 +1,13 @@
 package system
 
 import (
+	"encoding/json"
 	"net/http"
 	"runtime"
+	"time"
 
 	"serveoapi/internal/core/response"
+	"serveoapi/internal/core/stream"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -18,16 +21,7 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-// GetSystem godoc
-// @Summary      Get System Metrics
-// @Description  Returns system information like CPU, RAM, Disk, Network, etc.
-// @Tags         system
-// @Accept       json
-// @Produce      json
-// @Security     ApiKeyAuth
-// @Success      200  {object}  SystemResponse
-// @Router       /v2/system/ [get]
-func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
+func getSystemStats() SystemResponse {
 	// Mémoire
 	v, _ := mem.VirtualMemory()
 
@@ -75,7 +69,7 @@ func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
 		uptime = h.Uptime
 	}
 
-	resp := SystemResponse{
+	return SystemResponse{
 		CPUUsage:      cpuUsage,
 		RAMTotal:      ramTotal,
 		RAMUsed:       ramUsed,
@@ -91,6 +85,43 @@ func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
 		Hostname:      hostname,
 		Uptime:        uptime,
 	}
+}
 
+// GetSystem godoc
+// @Summary      Get System Metrics
+// @Description  Returns system information like CPU, RAM, Disk, Network, etc.
+// @Tags         system
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Success      200  {object}  SystemResponse
+// @Router       /v2/system/ [get]
+func (hd *Handler) GetSystem(w http.ResponseWriter, r *http.Request) {
+	resp := getSystemStats()
 	response.SendJSON(w, http.StatusOK, resp)
+}
+
+// StreamSystem godoc
+// @Summary      Stream System Metrics (SSE)
+// @Description  Streams CPU, RAM, Disk, Network stats via Server-Sent Events every second
+// @Tags         system
+// @Produce      text/event-stream
+// @Security     ApiKeyAuth
+// @Success      200  {string}  string "Event Stream"
+// @Router       /v2/system/stream [get]
+func (hd *Handler) StreamSystem(w http.ResponseWriter, r *http.Request) {
+	stream.SetupSSEHeaders(w)
+	ctx := r.Context()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			resp := getSystemStats()
+			jsonBytes, _ := json.Marshal(resp)
+			stream.SendSSEEvent(w, string(jsonBytes))
+			time.Sleep(1 * time.Second)
+		}
+	}
 }

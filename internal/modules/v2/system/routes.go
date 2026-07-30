@@ -18,4 +18,10 @@ func RegisterRoutes(
 		"GET /v2/system/",
 		authMiddleware(middleware.RequirePermission("system.read", http.HandlerFunc(h.GetSystem))),
 	)
+	mux.Handle(
+		"GET /v2/system/stream",
+		authMiddleware(
+			middleware.RequirePermission("system.read", http.HandlerFunc(h.StreamSystem)),
+		),
+	)
 }
