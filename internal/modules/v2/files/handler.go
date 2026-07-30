@@ -64,8 +64,18 @@ func (h *Handler) resolveSafeRoot(
 		reqPath = "."
 	}
 
-	// Nettoyer le chemin demandé pour supprimer les séparateurs redondants
+	// Nettoyer le chemin demandé
 	reqPath = filepath.Clean(reqPath)
+
+	// os.Root exige un chemin strictement relatif (sans slash au début)
+	// et utilise "." pour désigner la racine elle-même.
+	reqPath = filepath.ToSlash(reqPath)
+	for len(reqPath) > 0 && reqPath[0] == '/' {
+		reqPath = reqPath[1:]
+	}
+	if reqPath == "" {
+		reqPath = "."
+	}
 
 	return root, reqPath, true
 }
