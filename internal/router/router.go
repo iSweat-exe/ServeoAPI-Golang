@@ -71,5 +71,6 @@ func New(cfg *config.Config, dockerCli *client.Client) http.Handler {
 // @Security     ApiKeyAuth
 // @Success      200  {string}  string "Prometheus metrics"
 // @Router       /prometheus [get]
+//
 //nolint:unused
 func prometheusDocs() {}
