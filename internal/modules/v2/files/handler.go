@@ -54,7 +54,7 @@ func (h *Handler) resolveSafeRoot(
 		response.SendError(
 			w,
 			http.StatusForbidden,
-			"Security violation: Cannot open root directory safely",
+			"Security violation: Cannot open root directory safely: "+err.Error()+" (path: "+rootPath+")",
 		)
 		return nil, "", false
 	}
