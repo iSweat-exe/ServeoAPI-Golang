@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
 	"serveoapi/internal/core/database"
 	"serveoapi/internal/modules/v2/auth"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // ValidateToken checks if a token is a valid PAT or JWT, and returns the UserID and Permissions.

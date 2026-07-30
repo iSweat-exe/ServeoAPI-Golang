@@ -86,8 +86,7 @@ func (h *Handler) CreateBackup(
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(BackupInfo{
+	response.SendJSON(w, http.StatusCreated, BackupInfo{
 		Filename:  info.Name(),
 		Size:      info.Size(),
 		CreatedAt: info.ModTime(),
@@ -199,7 +198,7 @@ func (h *Handler) RestoreBackup(
 
 	destDir := filepath.Join(h.Config.AllowedMountRoot, server)
 	// Créer s'il n'existe pas
-	os.MkdirAll(destDir, 0o755)
+	_ = os.MkdirAll(destDir, 0o755)
 
 	if err := unzip(zipPath, destDir); err != nil {
 		response.SendError(
@@ -270,7 +269,7 @@ func unzip(src string, dest string) error {
 		}
 
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
+			_ = os.MkdirAll(fpath, os.ModePerm)
 			continue
 		}
 

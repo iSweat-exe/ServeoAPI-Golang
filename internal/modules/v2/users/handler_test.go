@@ -47,7 +47,7 @@ func TestUpdateMePasswordSuccess(t *testing.T) {
 		Username:     "testuser",
 		TokenVersion: 1,
 	}
-	user.HashPassword("oldpassword123")
+	_ = user.HashPassword("oldpassword123")
 	require.NoError(t, db.Create(&user).Error)
 
 	h := &Handler{DB: db}
@@ -88,7 +88,7 @@ func TestUpdateMePasswordInvalidInput(t *testing.T) {
 		Username:     "testuser",
 		TokenVersion: 1,
 	}
-	user.HashPassword("oldpassword123")
+	_ = user.HashPassword("oldpassword123")
 	require.NoError(t, db.Create(&user).Error)
 
 	h := &Handler{DB: db}

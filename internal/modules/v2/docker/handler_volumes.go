@@ -118,9 +118,7 @@ func (h *Handler) CreateVolume(
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(VolumeInfo{
+	response.SendJSON(w, http.StatusCreated, VolumeInfo{
 		Name:       vol.Name,
 		Driver:     vol.Driver,
 		Mountpoint: vol.Mountpoint,

@@ -122,9 +122,7 @@ func (h *Handler) CreateNetwork(
 	net, err := cli.NetworkInspect(r.Context(), res.ID, network.InspectOptions{})
 	if err != nil {
 		// Renvoyer juste l'ID si l'inspection échoue
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(NetworkInfo{
+		response.SendJSON(w, http.StatusOK, NetworkInfo{
 			ID:     res.ID,
 			Name:   req.Name,
 			Driver: req.Driver,
@@ -132,9 +130,7 @@ func (h *Handler) CreateNetwork(
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(NetworkInfo{
+	response.SendJSON(w, http.StatusCreated, NetworkInfo{
 		ID:     net.ID,
 		Name:   net.Name,
 		Driver: net.Driver,

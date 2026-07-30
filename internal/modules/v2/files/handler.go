@@ -150,7 +150,7 @@ func (h *Handler) ReadFile(w http.ResponseWriter, r *http.Request) {
 		defer f.Close()
 
 		w.Header().Set("Content-Type", "application/octet-stream")
-		io.Copy(w, f)
+		_, _ = io.Copy(w, f)
 	})
 }
 

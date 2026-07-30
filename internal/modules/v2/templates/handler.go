@@ -102,7 +102,7 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 var defaultTemplates = map[string]string{
@@ -280,6 +280,6 @@ var defaultTemplates = map[string]string{
 // Fonction utilitaire pour écrire les modèles par défaut
 func writeDefaultTemplates(path string) {
 	for name, content := range defaultTemplates {
-		os.WriteFile(filepath.Join(path, name), []byte(content), 0o644)
+		_ = os.WriteFile(filepath.Join(path, name), []byte(content), 0o644)
 	}
 }

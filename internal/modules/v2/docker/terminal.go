@@ -128,10 +128,10 @@ func (h *Handler) TerminalHandler(
 	defer ws.Close()
 
 	// 1. Authentification au premier message (timeout 5s)
-	ws.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = ws.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, msgBytes, err := ws.ReadMessage()
 	if err != nil {
-		ws.WriteControl(
+		_ = ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(4001, "Auth timeout or error"),
 			time.Now().Add(time.Second),
@@ -141,7 +141,7 @@ func (h *Handler) TerminalHandler(
 
 	var authMsg TerminalAuthMessage
 	if err := json.Unmarshal(msgBytes, &authMsg); err != nil || authMsg.Type != "auth" {
-		ws.WriteControl(
+		_ = ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(4001, "Expected auth message"),
 			time.Now().Add(time.Second),
@@ -150,7 +150,7 @@ func (h *Handler) TerminalHandler(
 	}
 
 	if !hasContainerWritePermission(authMsg.Token) {
-		ws.WriteControl(
+		_ = ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(4003, "Forbidden: Missing docker.containers.write"),
 			time.Now().Add(time.Second),
@@ -159,7 +159,7 @@ func (h *Handler) TerminalHandler(
 	}
 
 	// Supprimer la deadline de lecture pour le fonctionnement normal
-	ws.SetReadDeadline(time.Time{})
+	_ = ws.SetReadDeadline(time.Time{})
 
 	// 3. Tester le Shell
 	ctx, cancel := context.WithCancel(r.Context())
@@ -178,7 +178,7 @@ func (h *Handler) TerminalHandler(
 
 	execResp, err := cli.ContainerExecCreate(ctx, containerID, execConfig)
 	if err != nil {
-		ws.WriteControl(
+		_ = ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(1011, "Exec create failed"),
 			time.Now().Add(time.Second),
@@ -193,7 +193,7 @@ func (h *Handler) TerminalHandler(
 		container.ExecStartOptions{Tty: true},
 	)
 	if err != nil {
-		ws.WriteControl(
+		_ = ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(1011, "Exec attach failed"),
 			time.Now().Add(time.Second),
@@ -219,7 +219,7 @@ func (h *Handler) TerminalHandler(
 
 	// Si le shell s'est arrêté proprement (EOF), notifier le client WebSocket avant de fermer
 	if err == nil {
-		ws.WriteControl(
+		_ = ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Shell exited"),
 			time.Now().Add(time.Second),

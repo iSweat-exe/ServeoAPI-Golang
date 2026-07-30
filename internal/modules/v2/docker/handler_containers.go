@@ -142,9 +142,7 @@ func (h *Handler) CreateContainer(
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(info)
+	response.SendJSON(w, http.StatusCreated, info)
 }
 
 type UpdateContainerRequest struct {
@@ -185,7 +183,5 @@ func (h *Handler) UpdateContainer(
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(info)
+	response.SendJSON(w, http.StatusOK, info)
 }

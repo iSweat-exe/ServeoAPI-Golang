@@ -174,9 +174,7 @@ func (h *Handler) executeDeploy(
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
+	response.SendJSON(w, http.StatusCreated, map[string]string{
 		"message": "Stack deployed successfully",
 		"output":  string(out),
 	})

@@ -31,17 +31,17 @@ func loadCooldowns() {
 	defer cooldownMutex.Unlock()
 	b, err := os.ReadFile(cooldownFile)
 	if err == nil {
-		json.Unmarshal(b, &lastRebootMap)
+		_ = json.Unmarshal(b, &lastRebootMap)
 	}
 }
 
 func saveCooldowns() {
 	cooldownMutex.Lock()
 	defer cooldownMutex.Unlock()
-	os.MkdirAll("data", 0o755)
+	_ = os.MkdirAll("data", 0o755)
 	b, err := json.Marshal(lastRebootMap)
 	if err == nil {
-		os.WriteFile(cooldownFile, b, 0o644)
+		_ = os.WriteFile(cooldownFile, b, 0o644)
 	}
 }
 
