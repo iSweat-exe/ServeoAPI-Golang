@@ -47,14 +47,27 @@ func (h *Handler) resolveSafeRoot(
 
 	rootPath := filepath.Join(h.Config.AllowedMountRoot, serverName)
 
+	// Le répertoire de données peut ne pas encore exister (conteneur jamais démarré,
+	// bind mount pas encore matérialisé par Docker, serveur tout juste créé, etc.).
+	// Le conteneur étant déjà vérifié ci-dessus, on le crée à la volée plutôt que
+	// d'échouer avec une erreur qui ressemble à un problème de sécurité.
+	if err := os.MkdirAll(rootPath, 0o755); err != nil {
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Cannot create data directory for this server: "+err.Error(),
+		)
+		return nil, "", false
+	}
+
 	// Utilisation de os.OpenRoot (Go 1.24+) qui garantit RESOLVE_BENEATH de façon atomique
 	// Cela ferme entièrement la fenêtre de vulnérabilité TOCTOU pour les répertoires intermédiaires
 	root, err := os.OpenRoot(rootPath)
 	if err != nil {
 		response.SendError(
 			w,
-			http.StatusForbidden,
-			"Security violation: Cannot open root directory safely: "+err.Error()+" (path: "+rootPath+")",
+			http.StatusInternalServerError,
+			"Cannot access data directory for this server: "+err.Error(),
 		)
 		return nil, "", false
 	}
