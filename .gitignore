@@ -13,6 +13,9 @@
 # Fichiers d'environnement & IDE
 .env
 .env.local
+
+# Clés minisign de release (ne jamais committer la clé privée)
+/secrets/
 .idea/
 .vscode/
 *.swp

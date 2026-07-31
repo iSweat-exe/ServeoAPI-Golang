@@ -57,6 +57,25 @@ Toute la configuration passe par des variables d'environnement.
 - **Mises à jour** : `serveoapi update` vérifie la signature minisign de la release avant de
   remplacer le binaire.
 
+## Releases (signature minisign)
+
+Le workflow `.github/workflows/release.yml` (tags `v*`) signe chaque binaire. Sans les
+secrets suivants, le job **Sign Binary** échoue :
+
+| Secret GitHub | Contenu |
+| --- | --- |
+| `MINISIGN_PRIVATE_KEY` | Contenu complet de `secrets/minisign.key` |
+| `MINISIGN_PUBLIC_KEY` | Clé publique **sur une seule ligne** (préfixe `RW…`) |
+
+Génération locale (une seule fois) :
+
+```bash
+go run ./scripts/generate-minisign-keys.go
+```
+
+Puis collez les valeurs affichées dans
+Settings → Secrets and variables → Actions du dépôt. Ne committez jamais `secrets/`.
+
 ## Structure
 
 ```
