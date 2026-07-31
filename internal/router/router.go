@@ -17,6 +17,7 @@ import (
 	"serveoapi/internal/modules/v2/backups"
 	"serveoapi/internal/modules/v2/docker"
 	"serveoapi/internal/modules/v2/files"
+	"serveoapi/internal/modules/v2/firewall"
 	"serveoapi/internal/modules/v2/health"
 	"serveoapi/internal/modules/v2/mcp"
 	"serveoapi/internal/modules/v2/metadata"
@@ -56,6 +57,7 @@ func New(cfg *config.Config, dockerCli *client.Client) http.Handler {
 	apikeys.RegisterRoutes(mux, authMiddleware, database.DB)
 	metrics.RegisterRoutes(mux, authMiddleware)
 	backups.RegisterRoutes(mux, authMiddleware, cfg)
+	firewall.RegisterRoutes(mux, authMiddleware, cfg)
 	health.RegisterRoutes(mux, database.DB, dockerCli)
 
 	// Métriques Prometheus sécurisées avec JWT auth pour éviter les fuites

@@ -74,6 +74,10 @@ var Catalog = []Group{
 		{Key: "ovh.read", Label: "View servers"},
 		{Key: "ovh.write", Label: "Reboot servers"},
 	}},
+	{Resource: "firewall", Label: "Firewall", Scopes: []Scope{
+		{Key: "firewall.read", Label: "View status & rules"},
+		{Key: "firewall.write", Label: "Manage rules"},
+	}},
 	{Resource: "mcp", Label: "MCP", Scopes: []Scope{
 		{Key: "mcp.use", Label: "Use MCP server"},
 	}},

@@ -231,6 +231,43 @@ definitions:
       size:
         type: integer
     type: object
+  firewall.AddRuleRequest:
+    properties:
+      action:
+        description: 'Action: "allow", "deny", "reject" ou "limit".'
+        type: string
+      comment:
+        type: string
+      from:
+        description: 'From: IP ou CIDR autorisé/visé, "any" par défaut.'
+        type: string
+      port:
+        description: 'Port: un port ("8080") ou une plage ("8000:9000").'
+        type: string
+      protocol:
+        description: 'Protocol: "tcp", "udp", ou vide pour les deux.'
+        type: string
+    type: object
+  firewall.Rule:
+    properties:
+      action:
+        type: string
+      from:
+        type: string
+      number:
+        type: integer
+      to:
+        type: string
+    type: object
+  firewall.StatusResponse:
+    properties:
+      active:
+        type: boolean
+      rules:
+        items:
+          $ref: '#/definitions/firewall.Rule'
+        type: array
+    type: object
   metadata.MetadataResponse:
     properties:
       api_version:
@@ -1398,6 +1435,166 @@ paths:
       summary: Write File
       tags:
       - files
+  /v2/firewall/disable:
+    post:
+      description: Disables UFW, allowing all traffic
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Disable Firewall
+      tags:
+      - firewall
+  /v2/firewall/enable:
+    post:
+      description: Enables UFW. Refuses if it would immediately lock out SSH or API
+        access.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Enable Firewall
+      tags:
+      - firewall
+  /v2/firewall/rules:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new UFW rule (allow/deny/reject/limit) for a port or
+        port range
+      parameters:
+      - description: Rule definition
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/firewall.AddRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Add Firewall Rule
+      tags:
+      - firewall
+  /v2/firewall/rules/{number}:
+    delete:
+      description: Removes a UFW rule by its number (see GET /v2/firewall/status)
+      parameters:
+      - description: Rule number
+        in: path
+        name: number
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Firewall Rule
+      tags:
+      - firewall
+  /v2/firewall/status:
+    get:
+      description: Returns whether UFW is active and lists its current numbered rules
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/firewall.StatusResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get Firewall Status
+      tags:
+      - firewall
   /v2/metadata/:
     get:
       consumes:
