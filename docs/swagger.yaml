@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  internal_modules_v2_apikeys.ApiKeyResponse:
+  apikeys.ApiKeyResponse:
     properties:
       created_at:
         type: string
@@ -11,14 +11,14 @@ definitions:
       prefix:
         type: string
     type: object
-  internal_modules_v2_apikeys.CreateApiKeyRequest:
+  apikeys.CreateApiKeyRequest:
     properties:
       name:
         type: string
     required:
     - name
     type: object
-  internal_modules_v2_apikeys.CreateApiKeyResponse:
+  apikeys.CreateApiKeyResponse:
     properties:
       id:
         type: integer
@@ -28,7 +28,7 @@ definitions:
         description: Only shown once during creation
         type: string
     type: object
-  internal_modules_v2_auth.LoginRequest:
+  auth.LoginRequest:
     properties:
       password:
         type: string
@@ -38,17 +38,17 @@ definitions:
     - password
     - username
     type: object
-  internal_modules_v2_auth.LoginResponse:
+  auth.LoginResponse:
     properties:
       token:
         type: string
     type: object
-  internal_modules_v2_auth.TicketResponse:
+  auth.TicketResponse:
     properties:
       ticket:
         type: string
     type: object
-  internal_modules_v2_backups.BackupInfo:
+  backups.BackupInfo:
     properties:
       created_at:
         type: string
@@ -57,12 +57,12 @@ definitions:
       size:
         type: integer
     type: object
-  internal_modules_v2_backups.RestoreRequest:
+  backups.RestoreRequest:
     properties:
       filename:
         type: string
     type: object
-  internal_modules_v2_docker.ContainerInfo:
+  docker.ContainerInfo:
     properties:
       id:
         type: string
@@ -85,7 +85,7 @@ definitions:
       status:
         type: string
     type: object
-  internal_modules_v2_docker.CreateContainerRequest:
+  docker.CreateContainerRequest:
     properties:
       env:
         items:
@@ -112,7 +112,7 @@ definitions:
           type: string
         type: array
     type: object
-  internal_modules_v2_docker.CreateNetworkRequest:
+  docker.CreateNetworkRequest:
     properties:
       driver:
         type: string
@@ -123,7 +123,7 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_v2_docker.CreateVolumeRequest:
+  docker.CreateVolumeRequest:
     properties:
       driver:
         type: string
@@ -134,7 +134,7 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_v2_docker.DeployStackRequest:
+  docker.DeployStackRequest:
     properties:
       content:
         description: Raw YAML content
@@ -142,7 +142,7 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_v2_docker.ImageInfo:
+  docker.ImageInfo:
     properties:
       created:
         type: integer
@@ -155,7 +155,7 @@ definitions:
       size:
         type: integer
     type: object
-  internal_modules_v2_docker.NetworkInfo:
+  docker.NetworkInfo:
     properties:
       driver:
         type: string
@@ -164,20 +164,20 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_v2_docker.PullImageRequest:
+  docker.PullImageRequest:
     properties:
       image:
         description: 'ex: "nginx:latest"'
         type: string
     type: object
-  internal_modules_v2_docker.RenameContainerRequest:
+  docker.RenameContainerRequest:
     properties:
       name:
         type: string
     required:
     - name
     type: object
-  internal_modules_v2_docker.SystemInfo:
+  docker.SystemInfo:
     properties:
       containers:
         type: integer
@@ -194,7 +194,7 @@ definitions:
       server_version:
         type: string
     type: object
-  internal_modules_v2_docker.UpdateContainerRequest:
+  docker.UpdateContainerRequest:
     properties:
       env:
         items:
@@ -208,7 +208,7 @@ definitions:
           type: string
         type: object
     type: object
-  internal_modules_v2_docker.VolumeInfo:
+  docker.VolumeInfo:
     properties:
       driver:
         type: string
@@ -217,7 +217,7 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_v2_files.FileInfo:
+  files.FileInfo:
     properties:
       is_dir:
         type: boolean
@@ -231,7 +231,7 @@ definitions:
       size:
         type: integer
     type: object
-  internal_modules_v2_metadata.MetadataResponse:
+  metadata.MetadataResponse:
     properties:
       api_version:
         type: string
@@ -250,7 +250,7 @@ definitions:
       protocol_version:
         type: integer
     type: object
-  internal_modules_v2_metrics.ContainerStat:
+  metrics.ContainerStat:
     properties:
       block_read:
         type: number
@@ -277,7 +277,7 @@ definitions:
       timestamp:
         type: string
     type: object
-  internal_modules_v2_metrics.SystemStat:
+  metrics.SystemStat:
     properties:
       cpu_percent:
         type: number
@@ -298,7 +298,7 @@ definitions:
       timestamp:
         type: string
     type: object
-  internal_modules_v2_ovh.OvhMeResponse:
+  ovh.OvhMeResponse:
     properties:
       email:
         type: string
@@ -307,7 +307,25 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_v2_system.SystemResponse:
+  permissions.Group:
+    properties:
+      label:
+        type: string
+      resource:
+        type: string
+      scopes:
+        items:
+          $ref: '#/definitions/permissions.Scope'
+        type: array
+    type: object
+  permissions.Scope:
+    properties:
+      key:
+        type: string
+      label:
+        type: string
+    type: object
+  system.SystemResponse:
     properties:
       arch:
         type: string
@@ -338,7 +356,7 @@ definitions:
       uptime:
         type: integer
     type: object
-  internal_modules_v2_templates.DeployTemplateRequest:
+  templates.DeployTemplateRequest:
     properties:
       variables:
         additionalProperties:
@@ -346,7 +364,7 @@ definitions:
         description: 'Valeurs des variables (ex: {"EULA": "TRUE"})'
         type: object
     type: object
-  internal_modules_v2_templates.TemplateInfo:
+  templates.TemplateInfo:
     properties:
       category:
         description: 'ex: "game", "database", "app", "lang"'
@@ -355,7 +373,7 @@ definitions:
         type: string
       docker:
         allOf:
-        - $ref: '#/definitions/serveoapi_internal_modules_v2_docker.CreateContainerRequest'
+        - $ref: '#/definitions/docker.CreateContainerRequest'
         description: Le payload exact à envoyer à /v2/docker/containers/create
       id:
         type: string
@@ -366,10 +384,10 @@ definitions:
       variables:
         description: Variables à demander à l'utilisateur
         items:
-          $ref: '#/definitions/internal_modules_v2_templates.TemplateVariable'
+          $ref: '#/definitions/templates.TemplateVariable'
         type: array
     type: object
-  internal_modules_v2_templates.TemplateVariable:
+  templates.TemplateVariable:
     properties:
       default:
         description: Valeur par défaut
@@ -387,7 +405,7 @@ definitions:
         description: Est-ce obligatoire ?
         type: boolean
     type: object
-  internal_modules_v2_users.AdminUpdatePasswordRequest:
+  users.AdminUpdatePasswordRequest:
     properties:
       new_password:
         minLength: 8
@@ -395,7 +413,7 @@ definitions:
     required:
     - new_password
     type: object
-  internal_modules_v2_users.CreateUserRequest:
+  users.CreateUserRequest:
     properties:
       password:
         minLength: 8
@@ -410,7 +428,7 @@ definitions:
     - password
     - username
     type: object
-  internal_modules_v2_users.UpdatePasswordRequest:
+  users.UpdatePasswordRequest:
     properties:
       new_password:
         minLength: 8
@@ -421,7 +439,7 @@ definitions:
     - new_password
     - old_password
     type: object
-  internal_modules_v2_users.UpdateUserRequest:
+  users.UpdateUserRequest:
     properties:
       permissions:
         type: string
@@ -431,7 +449,7 @@ definitions:
         description: permet de bannir ou forcer la déconnexion
         type: string
     type: object
-  internal_modules_v2_users.UserResponse:
+  users.UserResponse:
     properties:
       id:
         type: integer
@@ -447,56 +465,6 @@ definitions:
         type: string
       uuid:
         type: string
-    type: object
-  serveoapi_internal_modules_v2_docker.ContainerInfo:
-    properties:
-      id:
-        type: string
-      image:
-        type: string
-      labels:
-        additionalProperties:
-          type: string
-        type: object
-      names:
-        items:
-          type: string
-        type: array
-      ports:
-        additionalProperties:
-          type: string
-        type: object
-      state:
-        type: string
-      status:
-        type: string
-    type: object
-  serveoapi_internal_modules_v2_docker.CreateContainerRequest:
-    properties:
-      env:
-        items:
-          type: string
-        type: array
-      image:
-        type: string
-      labels:
-        additionalProperties:
-          type: string
-        type: object
-      name:
-        type: string
-      ports:
-        additionalProperties:
-          type: string
-        description: 'ex: {"8080": "80"}'
-        type: object
-      restart_policy:
-        type: string
-      volumes:
-        description: 'ex: ["myvol:/data", "/var/serveoapi/data/app:/app"]'
-        items:
-          type: string
-        type: array
     type: object
 host: localhost:8080
 info:
@@ -558,7 +526,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_apikeys.ApiKeyResponse'
+              $ref: '#/definitions/apikeys.ApiKeyResponse'
             type: array
       security:
       - ApiKeyAuth: []
@@ -599,14 +567,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_apikeys.CreateApiKeyRequest'
+          $ref: '#/definitions/apikeys.CreateApiKeyRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_v2_apikeys.CreateApiKeyResponse'
+            $ref: '#/definitions/apikeys.CreateApiKeyResponse'
       security:
       - ApiKeyAuth: []
       summary: Create API Key
@@ -623,14 +591,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_auth.LoginRequest'
+          $ref: '#/definitions/auth.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_auth.LoginResponse'
+            $ref: '#/definitions/auth.LoginResponse'
         "401":
           description: Invalid credentials
           schema:
@@ -659,7 +627,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_auth.TicketResponse'
+            $ref: '#/definitions/auth.TicketResponse'
         "401":
           description: Unauthorized
           schema:
@@ -685,7 +653,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_backups.BackupInfo'
+              $ref: '#/definitions/backups.BackupInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -706,7 +674,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_v2_backups.BackupInfo'
+            $ref: '#/definitions/backups.BackupInfo'
         "404":
           description: Not Found
           schema:
@@ -736,7 +704,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_backups.RestoreRequest'
+          $ref: '#/definitions/backups.RestoreRequest'
       produces:
       - application/json
       responses:
@@ -771,7 +739,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.DeployStackRequest'
+          $ref: '#/definitions/docker.DeployStackRequest'
       produces:
       - application/json
       responses:
@@ -804,7 +772,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_docker.ContainerInfo'
+              $ref: '#/definitions/docker.ContainerInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -955,7 +923,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.RenameContainerRequest'
+          $ref: '#/definitions/docker.RenameContainerRequest'
       produces:
       - application/json
       responses:
@@ -1016,14 +984,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.UpdateContainerRequest'
+          $ref: '#/definitions/docker.UpdateContainerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_docker.ContainerInfo'
+            $ref: '#/definitions/docker.ContainerInfo'
         "400":
           description: Bad Request
           schema:
@@ -1049,14 +1017,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.CreateContainerRequest'
+          $ref: '#/definitions/docker.CreateContainerRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_v2_docker.ContainerInfo'
+            $ref: '#/definitions/docker.ContainerInfo'
         "400":
           description: Bad Request
           schema:
@@ -1082,7 +1050,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_docker.ImageInfo'
+              $ref: '#/definitions/docker.ImageInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1121,7 +1089,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.PullImageRequest'
+          $ref: '#/definitions/docker.PullImageRequest'
       produces:
       - text/event-stream
       responses:
@@ -1144,7 +1112,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_docker.NetworkInfo'
+              $ref: '#/definitions/docker.NetworkInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1161,14 +1129,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.CreateNetworkRequest'
+          $ref: '#/definitions/docker.CreateNetworkRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_v2_docker.NetworkInfo'
+            $ref: '#/definitions/docker.NetworkInfo'
         "400":
           description: Bad Request
           schema:
@@ -1223,7 +1191,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_docker.SystemInfo'
+            $ref: '#/definitions/docker.SystemInfo'
       security:
       - ApiKeyAuth: []
       summary: Get Docker System Info
@@ -1250,7 +1218,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_docker.VolumeInfo'
+              $ref: '#/definitions/docker.VolumeInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1267,14 +1235,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_docker.CreateVolumeRequest'
+          $ref: '#/definitions/docker.CreateVolumeRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_v2_docker.VolumeInfo'
+            $ref: '#/definitions/docker.VolumeInfo'
         "400":
           description: Bad Request
           schema:
@@ -1353,7 +1321,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_files.FileInfo'
+              $ref: '#/definitions/files.FileInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1441,7 +1409,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_metadata.MetadataResponse'
+            $ref: '#/definitions/metadata.MetadataResponse'
       security:
       - ApiKeyAuth: []
       summary: Get API Metadata
@@ -1463,7 +1431,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_metrics.ContainerStat'
+              $ref: '#/definitions/metrics.ContainerStat'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1480,7 +1448,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_metrics.SystemStat'
+              $ref: '#/definitions/metrics.SystemStat'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1540,7 +1508,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_ovh.OvhMeResponse'
+            $ref: '#/definitions/ovh.OvhMeResponse'
       security:
       - ApiKeyAuth: []
       summary: Get OVH Account Info
@@ -1557,10 +1525,28 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_system.SystemResponse'
+            $ref: '#/definitions/system.SystemResponse'
       security:
       - ApiKeyAuth: []
       summary: Get System Metrics
+      tags:
+      - system
+  /v2/system/permissions:
+    get:
+      description: Returns the catalog of grantable permission scopes, grouped by
+        resource, used to build a permissions picker (requires users.manage)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/permissions.Group'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: List available permission scopes
       tags:
       - system
   /v2/system/stream:
@@ -1591,7 +1577,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_templates.TemplateInfo'
+              $ref: '#/definitions/templates.TemplateInfo'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1615,7 +1601,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_templates.TemplateInfo'
+            $ref: '#/definitions/templates.TemplateInfo'
         "404":
           description: Template not found
           schema:
@@ -1642,14 +1628,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_templates.DeployTemplateRequest'
+          $ref: '#/definitions/templates.DeployTemplateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/serveoapi_internal_modules_v2_docker.ContainerInfo'
+            $ref: '#/definitions/docker.ContainerInfo'
         "400":
           description: Bad Request
           schema:
@@ -1677,7 +1663,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_v2_users.UserResponse'
+              $ref: '#/definitions/users.UserResponse'
             type: array
       security:
       - ApiKeyAuth: []
@@ -1694,14 +1680,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_users.CreateUserRequest'
+          $ref: '#/definitions/users.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_v2_users.UserResponse'
+            $ref: '#/definitions/users.UserResponse'
         "400":
           description: Bad Request
           schema:
@@ -1747,14 +1733,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_users.UpdateUserRequest'
+          $ref: '#/definitions/users.UpdateUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_users.UserResponse'
+            $ref: '#/definitions/users.UserResponse'
       security:
       - ApiKeyAuth: []
       summary: Update user
@@ -1777,7 +1763,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_users.AdminUpdatePasswordRequest'
+          $ref: '#/definitions/users.AdminUpdatePasswordRequest'
       produces:
       - application/json
       responses:
@@ -1809,7 +1795,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_v2_users.UserResponse'
+            $ref: '#/definitions/users.UserResponse'
       security:
       - ApiKeyAuth: []
       summary: Get my profile
@@ -1826,7 +1812,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_v2_users.UpdatePasswordRequest'
+          $ref: '#/definitions/users.UpdatePasswordRequest'
       produces:
       - application/json
       responses:

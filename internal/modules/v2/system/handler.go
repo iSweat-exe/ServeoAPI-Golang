@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	"serveoapi/internal/core/permissions"
 	"serveoapi/internal/core/response"
 	"serveoapi/internal/core/stream"
 
@@ -142,4 +143,16 @@ func (hd *Handler) StreamSystem(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(1 * time.Second)
 		}
 	}
+}
+
+// GetPermissionsCatalog godoc
+// @Summary      List available permission scopes
+// @Description  Returns the catalog of grantable permission scopes, grouped by resource, used to build a permissions picker (requires users.manage)
+// @Tags         system
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Success      200  {array}  permissions.Group
+// @Router       /v2/system/permissions [get]
+func (hd *Handler) GetPermissionsCatalog(w http.ResponseWriter, r *http.Request) {
+	response.SendJSON(w, http.StatusOK, permissions.Catalog)
 }

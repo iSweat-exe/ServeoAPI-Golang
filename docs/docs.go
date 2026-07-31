@@ -102,7 +102,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_apikeys.ApiKeyResponse"
+                                "$ref": "#/definitions/apikeys.ApiKeyResponse"
                             }
                         }
                     }
@@ -134,7 +134,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_apikeys.CreateApiKeyRequest"
+                            "$ref": "#/definitions/apikeys.CreateApiKeyRequest"
                         }
                     }
                 ],
@@ -142,7 +142,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_apikeys.CreateApiKeyResponse"
+                            "$ref": "#/definitions/apikeys.CreateApiKeyResponse"
                         }
                     }
                 }
@@ -205,7 +205,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_auth.LoginRequest"
+                            "$ref": "#/definitions/auth.LoginRequest"
                         }
                     }
                 ],
@@ -213,7 +213,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_auth.LoginResponse"
+                            "$ref": "#/definitions/auth.LoginResponse"
                         }
                     },
                     "401": {
@@ -263,7 +263,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_auth.TicketResponse"
+                            "$ref": "#/definitions/auth.TicketResponse"
                         }
                     },
                     "401": {
@@ -305,7 +305,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_backups.BackupInfo"
+                                "$ref": "#/definitions/backups.BackupInfo"
                             }
                         }
                     }
@@ -338,7 +338,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_backups.BackupInfo"
+                            "$ref": "#/definitions/backups.BackupInfo"
                         }
                     },
                     "404": {
@@ -388,7 +388,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_backups.RestoreRequest"
+                            "$ref": "#/definitions/backups.RestoreRequest"
                         }
                     }
                 ],
@@ -442,7 +442,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.DeployStackRequest"
+                            "$ref": "#/definitions/docker.DeployStackRequest"
                         }
                     }
                 ],
@@ -492,7 +492,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_docker.ContainerInfo"
+                                "$ref": "#/definitions/docker.ContainerInfo"
                             }
                         }
                     }
@@ -524,7 +524,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.CreateContainerRequest"
+                            "$ref": "#/definitions/docker.CreateContainerRequest"
                         }
                     }
                 ],
@@ -532,7 +532,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.ContainerInfo"
+                            "$ref": "#/definitions/docker.ContainerInfo"
                         }
                     },
                     "400": {
@@ -743,7 +743,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.RenameContainerRequest"
+                            "$ref": "#/definitions/docker.RenameContainerRequest"
                         }
                     }
                 ],
@@ -838,7 +838,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.UpdateContainerRequest"
+                            "$ref": "#/definitions/docker.UpdateContainerRequest"
                         }
                     }
                 ],
@@ -846,7 +846,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.ContainerInfo"
+                            "$ref": "#/definitions/docker.ContainerInfo"
                         }
                     },
                     "400": {
@@ -923,7 +923,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_docker.ImageInfo"
+                                "$ref": "#/definitions/docker.ImageInfo"
                             }
                         }
                     }
@@ -955,7 +955,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.PullImageRequest"
+                            "$ref": "#/definitions/docker.PullImageRequest"
                         }
                     }
                 ],
@@ -1024,7 +1024,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_docker.NetworkInfo"
+                                "$ref": "#/definitions/docker.NetworkInfo"
                             }
                         }
                     }
@@ -1054,7 +1054,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.CreateNetworkRequest"
+                            "$ref": "#/definitions/docker.CreateNetworkRequest"
                         }
                     }
                 ],
@@ -1062,7 +1062,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.NetworkInfo"
+                            "$ref": "#/definitions/docker.NetworkInfo"
                         }
                     },
                     "400": {
@@ -1152,7 +1152,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.SystemInfo"
+                            "$ref": "#/definitions/docker.SystemInfo"
                         }
                     }
                 }
@@ -1198,7 +1198,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_docker.VolumeInfo"
+                                "$ref": "#/definitions/docker.VolumeInfo"
                             }
                         }
                     }
@@ -1228,7 +1228,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.CreateVolumeRequest"
+                            "$ref": "#/definitions/docker.CreateVolumeRequest"
                         }
                     }
                 ],
@@ -1236,7 +1236,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_docker.VolumeInfo"
+                            "$ref": "#/definitions/docker.VolumeInfo"
                         }
                     },
                     "400": {
@@ -1361,7 +1361,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_files.FileInfo"
+                                "$ref": "#/definitions/files.FileInfo"
                             }
                         }
                     }
@@ -1498,7 +1498,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_metadata.MetadataResponse"
+                            "$ref": "#/definitions/metadata.MetadataResponse"
                         }
                     }
                 }
@@ -1534,7 +1534,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_metrics.ContainerStat"
+                                "$ref": "#/definitions/metrics.ContainerStat"
                             }
                         }
                     }
@@ -1562,7 +1562,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_metrics.SystemStat"
+                                "$ref": "#/definitions/metrics.SystemStat"
                             }
                         }
                     }
@@ -1659,7 +1659,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_ovh.OvhMeResponse"
+                            "$ref": "#/definitions/ovh.OvhMeResponse"
                         }
                     }
                 }
@@ -1687,7 +1687,35 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_system.SystemResponse"
+                            "$ref": "#/definitions/system.SystemResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/system/permissions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the catalog of grantable permission scopes, grouped by resource, used to build a permissions picker (requires users.manage)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "List available permission scopes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/permissions.Group"
+                            }
                         }
                     }
                 }
@@ -1742,7 +1770,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_templates.TemplateInfo"
+                                "$ref": "#/definitions/templates.TemplateInfo"
                             }
                         }
                     }
@@ -1780,7 +1808,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_templates.TemplateInfo"
+                            "$ref": "#/definitions/templates.TemplateInfo"
                         }
                     },
                     "404": {
@@ -1824,7 +1852,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_templates.DeployTemplateRequest"
+                            "$ref": "#/definitions/templates.DeployTemplateRequest"
                         }
                     }
                 ],
@@ -1832,7 +1860,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/serveoapi_internal_modules_v2_docker.ContainerInfo"
+                            "$ref": "#/definitions/docker.ContainerInfo"
                         }
                     },
                     "400": {
@@ -1877,7 +1905,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
+                                "$ref": "#/definitions/users.UserResponse"
                             }
                         }
                     }
@@ -1907,7 +1935,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.CreateUserRequest"
+                            "$ref": "#/definitions/users.CreateUserRequest"
                         }
                     }
                 ],
@@ -1915,7 +1943,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
+                            "$ref": "#/definitions/users.UserResponse"
                         }
                     },
                     "400": {
@@ -1946,7 +1974,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
+                            "$ref": "#/definitions/users.UserResponse"
                         }
                     }
                 }
@@ -1977,7 +2005,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.UpdatePasswordRequest"
+                            "$ref": "#/definitions/users.UpdatePasswordRequest"
                         }
                     }
                 ],
@@ -2070,7 +2098,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.UpdateUserRequest"
+                            "$ref": "#/definitions/users.UpdateUserRequest"
                         }
                     }
                 ],
@@ -2078,7 +2106,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.UserResponse"
+                            "$ref": "#/definitions/users.UserResponse"
                         }
                     }
                 }
@@ -2116,7 +2144,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_v2_users.AdminUpdatePasswordRequest"
+                            "$ref": "#/definitions/users.AdminUpdatePasswordRequest"
                         }
                     }
                 ],
@@ -2147,7 +2175,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_modules_v2_apikeys.ApiKeyResponse": {
+        "apikeys.ApiKeyResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2164,7 +2192,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_apikeys.CreateApiKeyRequest": {
+        "apikeys.CreateApiKeyRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -2175,7 +2203,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_apikeys.CreateApiKeyResponse": {
+        "apikeys.CreateApiKeyResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2190,7 +2218,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_auth.LoginRequest": {
+        "auth.LoginRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -2205,7 +2233,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_auth.LoginResponse": {
+        "auth.LoginResponse": {
             "type": "object",
             "properties": {
                 "token": {
@@ -2213,7 +2241,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_auth.TicketResponse": {
+        "auth.TicketResponse": {
             "type": "object",
             "properties": {
                 "ticket": {
@@ -2221,7 +2249,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_backups.BackupInfo": {
+        "backups.BackupInfo": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2235,7 +2263,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_backups.RestoreRequest": {
+        "backups.RestoreRequest": {
             "type": "object",
             "properties": {
                 "filename": {
@@ -2243,7 +2271,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.ContainerInfo": {
+        "docker.ContainerInfo": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2278,7 +2306,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.CreateContainerRequest": {
+        "docker.CreateContainerRequest": {
             "type": "object",
             "properties": {
                 "env": {
@@ -2318,7 +2346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.CreateNetworkRequest": {
+        "docker.CreateNetworkRequest": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2335,7 +2363,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.CreateVolumeRequest": {
+        "docker.CreateVolumeRequest": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2352,7 +2380,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.DeployStackRequest": {
+        "docker.DeployStackRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -2364,7 +2392,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.ImageInfo": {
+        "docker.ImageInfo": {
             "type": "object",
             "properties": {
                 "created": {
@@ -2384,7 +2412,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.NetworkInfo": {
+        "docker.NetworkInfo": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2398,7 +2426,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.PullImageRequest": {
+        "docker.PullImageRequest": {
             "type": "object",
             "properties": {
                 "image": {
@@ -2407,7 +2435,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.RenameContainerRequest": {
+        "docker.RenameContainerRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -2418,7 +2446,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.SystemInfo": {
+        "docker.SystemInfo": {
             "type": "object",
             "properties": {
                 "containers": {
@@ -2444,7 +2472,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.UpdateContainerRequest": {
+        "docker.UpdateContainerRequest": {
             "type": "object",
             "properties": {
                 "env": {
@@ -2465,7 +2493,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_docker.VolumeInfo": {
+        "docker.VolumeInfo": {
             "type": "object",
             "properties": {
                 "driver": {
@@ -2479,7 +2507,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_files.FileInfo": {
+        "files.FileInfo": {
             "type": "object",
             "properties": {
                 "is_dir": {
@@ -2500,7 +2528,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_metadata.MetadataResponse": {
+        "metadata.MetadataResponse": {
             "type": "object",
             "properties": {
                 "api_version": {
@@ -2529,7 +2557,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_metrics.ContainerStat": {
+        "metrics.ContainerStat": {
             "type": "object",
             "properties": {
                 "block_read": {
@@ -2568,7 +2596,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_metrics.SystemStat": {
+        "metrics.SystemStat": {
             "type": "object",
             "properties": {
                 "cpu_percent": {
@@ -2600,7 +2628,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_ovh.OvhMeResponse": {
+        "ovh.OvhMeResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2614,7 +2642,35 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_system.SystemResponse": {
+        "permissions.Group": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "resource": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/permissions.Scope"
+                    }
+                }
+            }
+        },
+        "permissions.Scope": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "system.SystemResponse": {
             "type": "object",
             "properties": {
                 "arch": {
@@ -2661,7 +2717,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_templates.DeployTemplateRequest": {
+        "templates.DeployTemplateRequest": {
             "type": "object",
             "properties": {
                 "variables": {
@@ -2673,7 +2729,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_templates.TemplateInfo": {
+        "templates.TemplateInfo": {
             "type": "object",
             "properties": {
                 "category": {
@@ -2687,7 +2743,7 @@ const docTemplate = `{
                     "description": "Le payload exact à envoyer à /v2/docker/containers/create",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/serveoapi_internal_modules_v2_docker.CreateContainerRequest"
+                            "$ref": "#/definitions/docker.CreateContainerRequest"
                         }
                     ]
                 },
@@ -2704,12 +2760,12 @@ const docTemplate = `{
                     "description": "Variables à demander à l'utilisateur",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_modules_v2_templates.TemplateVariable"
+                        "$ref": "#/definitions/templates.TemplateVariable"
                     }
                 }
             }
         },
-        "internal_modules_v2_templates.TemplateVariable": {
+        "templates.TemplateVariable": {
             "type": "object",
             "properties": {
                 "default": {
@@ -2734,7 +2790,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_users.AdminUpdatePasswordRequest": {
+        "users.AdminUpdatePasswordRequest": {
             "type": "object",
             "required": [
                 "new_password"
@@ -2746,7 +2802,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_users.CreateUserRequest": {
+        "users.CreateUserRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -2768,7 +2824,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_users.UpdatePasswordRequest": {
+        "users.UpdatePasswordRequest": {
             "type": "object",
             "required": [
                 "new_password",
@@ -2784,7 +2840,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_users.UpdateUserRequest": {
+        "users.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "permissions": {
@@ -2799,7 +2855,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_v2_users.UserResponse": {
+        "users.UserResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2822,81 +2878,6 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
-                }
-            }
-        },
-        "serveoapi_internal_modules_v2_docker.ContainerInfo": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "labels": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "names": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "ports": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "state": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "serveoapi_internal_modules_v2_docker.CreateContainerRequest": {
-            "type": "object",
-            "properties": {
-                "env": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "image": {
-                    "type": "string"
-                },
-                "labels": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "ports": {
-                    "description": "ex: {\"8080\": \"80\"}",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "restart_policy": {
-                    "type": "string"
-                },
-                "volumes": {
-                    "description": "ex: [\"myvol:/data\", \"/var/serveoapi/data/app:/app\"]",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         }
