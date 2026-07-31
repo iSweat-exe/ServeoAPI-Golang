@@ -305,6 +305,94 @@ func sanitizeUploadPath(name string) (string, bool) {
 	return cleaned, true
 }
 
+// CreateDirectory godoc
+// @Summary      Create Directory
+// @Description  Creates an empty directory (and any missing intermediate directories). Fails with 409 if an entry already exists at that path.
+// @Tags         files
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        server path string true "Server Name"
+// @Param        path query string true "Relative path of the directory to create"
+// @Success      201 {object} map[string]string
+// @Failure      400,409,500 {string} string
+// @Router       /v2/files/{server}/mkdir [post]
+func (h *Handler) CreateDirectory(w http.ResponseWriter, r *http.Request) {
+	h.withSafeRoot(w, r, func(root *os.Root, reqPath string) {
+		if reqPath == "." {
+			response.SendError(w, http.StatusBadRequest, "Invalid directory path")
+			return
+		}
+
+		if _, err := root.Stat(reqPath); err == nil {
+			response.SendError(w, http.StatusConflict, "An item with this name already exists")
+			return
+		}
+
+		if err := root.MkdirAll(reqPath, 0o755); err != nil {
+			response.SendError(
+				w,
+				http.StatusInternalServerError,
+				"Failed to create directory: "+err.Error(),
+			)
+			return
+		}
+
+		response.SendJSON(w, http.StatusCreated, map[string]string{"message": "Directory created"})
+	})
+}
+
+// CreateFile godoc
+// @Summary      Create Empty File
+// @Description  Creates a new empty file (and any missing intermediate directories). Fails with 409 if an entry already exists at that path.
+// @Tags         files
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        server path string true "Server Name"
+// @Param        path query string true "Relative path of the file to create"
+// @Success      201 {object} map[string]string
+// @Failure      400,409,500 {string} string
+// @Router       /v2/files/{server}/create [post]
+func (h *Handler) CreateFile(w http.ResponseWriter, r *http.Request) {
+	h.withSafeRoot(w, r, func(root *os.Root, reqPath string) {
+		if reqPath == "." {
+			response.SendError(w, http.StatusBadRequest, "Invalid file path")
+			return
+		}
+
+		if _, err := root.Stat(reqPath); err == nil {
+			response.SendError(w, http.StatusConflict, "An item with this name already exists")
+			return
+		}
+
+		if dir := filepath.Dir(reqPath); dir != "." {
+			if err := root.MkdirAll(dir, 0o755); err != nil {
+				response.SendError(
+					w,
+					http.StatusInternalServerError,
+					"Cannot create directory: "+err.Error(),
+				)
+				return
+			}
+		}
+
+		// O_EXCL évite une course TOCTOU entre le Stat ci-dessus et la création.
+		f, err := root.OpenFile(reqPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err != nil {
+			response.SendError(
+				w,
+				http.StatusInternalServerError,
+				"Failed to create file: "+err.Error(),
+			)
+			return
+		}
+		defer f.Close()
+
+		chownFileToMatchRoot(f, root)
+
+		response.SendJSON(w, http.StatusCreated, map[string]string{"message": "File created"})
+	})
+}
+
 // DeleteFile godoc
 // @Summary      Delete File
 // @Description  Deletes a file or directory

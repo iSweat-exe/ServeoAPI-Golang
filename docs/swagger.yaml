@@ -1314,6 +1314,47 @@ paths:
       summary: Delete a Docker Volume
       tags:
       - docker-volumes
+  /v2/files/{server}/create:
+    post:
+      description: Creates a new empty file (and any missing intermediate directories).
+        Fails with 409 if an entry already exists at that path.
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative path of the file to create
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create Empty File
+      tags:
+      - files
   /v2/files/{server}/delete:
     delete:
       description: Deletes a file or directory
@@ -1363,6 +1404,47 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: List Files
+      tags:
+      - files
+  /v2/files/{server}/mkdir:
+    post:
+      description: Creates an empty directory (and any missing intermediate directories).
+        Fails with 409 if an entry already exists at that path.
+      parameters:
+      - description: Server Name
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Relative path of the directory to create
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create Directory
       tags:
       - files
   /v2/files/{server}/read:

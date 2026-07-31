@@ -30,5 +30,7 @@ func RegisterRoutes(
 	// Nécessite la permission 'files.write'
 	registerRoute("POST /v2/files/{server}/write", "files.write", h.WriteFile)
 	registerRoute("POST /v2/files/{server}/upload", "files.write", h.UploadFile)
+	registerRoute("POST /v2/files/{server}/mkdir", "files.write", h.CreateDirectory)
+	registerRoute("POST /v2/files/{server}/create", "files.write", h.CreateFile)
 	registerRoute("DELETE /v2/files/{server}/delete", "files.write", h.DeleteFile)
 }
