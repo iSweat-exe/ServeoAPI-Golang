@@ -1391,7 +1391,11 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Uploads a binary file using multipart/form-data
+      description: |-
+        Uploads a binary file using multipart/form-data. The multipart
+        filename may include a relative subpath (e.g. "mods/foo.jar")
+        to preserve folder structure from drag-and-drop uploads;
+        intermediate directories are created automatically.
       parameters:
       - description: Server Name
         in: path

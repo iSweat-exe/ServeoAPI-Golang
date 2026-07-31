@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/docker/docker/client"
 	"gorm.io/gorm"
@@ -214,7 +215,10 @@ func (h *Handler) WriteFile(w http.ResponseWriter, r *http.Request) {
 
 // UploadFile godoc
 // @Summary      Upload File
-// @Description  Uploads a binary file using multipart/form-data
+// @Description  Uploads a binary file using multipart/form-data. The multipart
+// @Description  filename may include a relative subpath (e.g. "mods/foo.jar")
+// @Description  to preserve folder structure from drag-and-drop uploads;
+// @Description  intermediate directories are created automatically.
 // @Tags         files
 // @Accept       mpfd
 // @Produce      json
@@ -243,13 +247,26 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer part.Close()
 
-	cleanFileName := filepath.Base(part.FileName())
-	if cleanFileName == "." || cleanFileName == "/" || cleanFileName == "" {
+	relPath, ok := sanitizeUploadPath(part.FileName())
+	if !ok {
 		response.SendError(w, http.StatusBadRequest, "Invalid filename")
 		return
 	}
 
-	finalPath := filepath.Join(reqPath, cleanFileName)
+	finalPath := filepath.Join(reqPath, relPath)
+
+	// Le nom de fichier multipart peut contenir un sous-chemin (upload de dossier
+	// par drag-and-drop) : on crée les répertoires intermédiaires si nécessaire.
+	if dir := filepath.Dir(finalPath); dir != "." {
+		if err := root.MkdirAll(dir, 0o755); err != nil {
+			response.SendError(
+				w,
+				http.StatusInternalServerError,
+				"Cannot create directory: "+err.Error(),
+			)
+			return
+		}
+	}
 
 	// Création atomique de fichier au sein de la racine sécurisée
 	f, err := root.OpenFile(finalPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
@@ -269,6 +286,23 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.SendJSON(w, http.StatusOK, map[string]string{"message": "File uploaded successfully"})
+}
+
+// sanitizeUploadPath nettoie le nom de fichier fourni par le client multipart
+// (potentiellement un sous-chemin relatif, ex: "mods/foo.jar", pour un upload
+// de dossier par drag-and-drop) et rejette toute tentative de traversée.
+// os.Root refuse déjà toute évasion de la racine ; cette validation ne sert
+// qu'à renvoyer une erreur explicite plutôt que de dépendre uniquement de lui.
+func sanitizeUploadPath(name string) (string, bool) {
+	cleaned := filepath.ToSlash(filepath.Clean(name))
+	cleaned = strings.TrimPrefix(cleaned, "/")
+	if cleaned == "" || cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, "../") {
+		return "", false
+	}
+	if base := filepath.Base(cleaned); base == "" || base == "." || base == "/" {
+		return "", false
+	}
+	return cleaned, true
 }
 
 // DeleteFile godoc

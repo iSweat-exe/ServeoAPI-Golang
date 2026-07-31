@@ -1409,7 +1409,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Uploads a binary file using multipart/form-data",
+                "description": "Uploads a binary file using multipart/form-data. The multipart\nfilename may include a relative subpath (e.g. \"mods/foo.jar\")\nto preserve folder structure from drag-and-drop uploads;\nintermediate directories are created automatically.",
                 "consumes": [
                     "multipart/form-data"
                 ],
