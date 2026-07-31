@@ -66,26 +66,33 @@ jobs:
           MINISIGN_PRIVATE_KEY: ${{ secrets.MINISIGN_PRIVATE_KEY }}
           MINISIGN_PUBLIC_KEY: ${{ secrets.MINISIGN_PUBLIC_KEY }}
         run: |
-          # #region agent log
-          PRIV_LEN=${#MINISIGN_PRIVATE_KEY}
-          PUB_LEN=${#MINISIGN_PUBLIC_KEY}
-          PRIV_SET=false
-          PUB_SET=false
-          [ "$PRIV_LEN" -gt 0 ] && PRIV_SET=true
-          [ "$PUB_LEN" -gt 0 ] && PUB_SET=true
-          echo "::notice::debug-9793e9 minisign secrets: private_set=$PRIV_SET private_len=$PRIV_LEN public_set=$PUB_SET public_len=$PUB_LEN event=${GITHUB_EVENT_NAME} ref=${GITHUB_REF} repo=${GITHUB_REPOSITORY}"
-          # #endregion
-
           if [ -z "$MINISIGN_PRIVATE_KEY" ]; then
             echo "::error::Le secret MINISIGN_PRIVATE_KEY est requis pour signer les binaires de release."
             echo "::error::Ajoutez-le dans Settings → Secrets and variables → Actions (contenu du fichier minisign.key)."
             exit 1
           fi
 
-          sudo apt-get update && sudo apt-get install -y minisign
-          echo "$MINISIGN_PRIVATE_KEY" > minisign.key
-          minisign -S -s minisign.key -m "$BINARY_NAME" -x "${BINARY_NAME}.minisig"
-          rm -f minisign.key
+          # #region agent log
+          PRIV_LEN=${#MINISIGN_PRIVATE_KEY}
+          PUB_LEN=${#MINISIGN_PUBLIC_KEY}
+          HAS_COMMENT=false
+          printf '%s' "$MINISIGN_PRIVATE_KEY" | tr -d '\r' | head -n1 | grep -q '^untrusted comment:' && HAS_COMMENT=true
+          echo "::notice::debug-9793e9 minisign go-sign: private_len=$PRIV_LEN public_len=$PUB_LEN has_comment=$HAS_COMMENT binary=$BINARY_NAME"
+          # #endregion
+
+          # Signature via Go (aead.dev/minisign) : accepte fichier complet OU corps base64 seul
+          # (le CLI C minisign échoue si la ligne untrusted comment est absente du secret).
+          go run ./scripts/sign-release -m "$BINARY_NAME" -x "${BINARY_NAME}.minisig"
+
+          # #region agent log
+          if [ -f "${BINARY_NAME}.minisig" ]; then
+            SIG_BYTES=$(wc -c < "${BINARY_NAME}.minisig" | tr -d ' ')
+            echo "::notice::debug-9793e9 minisign go-sign: ok sig_bytes=$SIG_BYTES"
+          else
+            echo "::error::debug-9793e9 minisign go-sign: missing signature file"
+            exit 1
+          fi
+          # #endregion
 
       - name: Release and Upload Assets
         uses: softprops/action-gh-release@v2

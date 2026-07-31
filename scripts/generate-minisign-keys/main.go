@@ -2,7 +2,7 @@
 //
 // Usage (depuis la racine ServeoAPI V2) :
 //
-//	go run ./scripts/generate-minisign-keys.go
+//	go run ./scripts/generate-minisign-keys
 //
 // Écrit les fichiers dans ./secrets/ (gitignored) et affiche la clé publique
 // à coller dans le secret GitHub MINISIGN_PUBLIC_KEY.
@@ -57,8 +57,8 @@ func main() {
 	fmt.Println("  MINISIGN_PUBLIC_KEY  = (une seule ligne, ci-dessous)")
 	fmt.Println(rawPub)
 	fmt.Println()
-	fmt.Println("  MINISIGN_PRIVATE_KEY = contenu COMPLET de secrets/minisign.key")
-	fmt.Println("                         (y compris la ligne untrusted comment)")
+	fmt.Println("  MINISIGN_PRIVATE_KEY = contenu de secrets/minisign.key")
+	fmt.Println("                         (fichier complet OU uniquement la ligne base64)")
 	fmt.Println()
 	fmt.Println("Ne committez jamais secrets/minisign.key.")
 }

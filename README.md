@@ -64,13 +64,13 @@ secrets suivants, le job **Sign Binary** échoue :
 
 | Secret GitHub | Contenu |
 | --- | --- |
-| `MINISIGN_PRIVATE_KEY` | Contenu complet de `secrets/minisign.key` |
+| `MINISIGN_PRIVATE_KEY` | Contenu de `secrets/minisign.key` (fichier complet **ou** ligne base64 seule) |
 | `MINISIGN_PUBLIC_KEY` | Clé publique **sur une seule ligne** (préfixe `RW…`) |
 
 Génération locale (une seule fois) :
 
 ```bash
-go run ./scripts/generate-minisign-keys.go
+go run ./scripts/generate-minisign-keys
 ```
 
 Puis collez les valeurs affichées dans
