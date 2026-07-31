@@ -8,17 +8,18 @@ import (
 
 // ContainerStat représente une métrique ponctuelle pour un conteneur Docker
 type ContainerStat struct {
-	ID            uint      `gorm:"primaryKey"     json:"id"`
-	ContainerID   string    `gorm:"index;not null" json:"container_id"`
-	Timestamp     time.Time `gorm:"index;not null" json:"timestamp"`
-	CPUPercent    float64   `                      json:"cpu_percent"`
-	MemoryUsage   uint64    `                      json:"memory_usage"`
-	MemoryLimit   uint64    `                      json:"memory_limit"`
-	MemoryPercent float64   `                      json:"memory_percent"`
-	NetworkRx     float64   `                      json:"network_rx"`
-	NetworkTx     float64   `                      json:"network_tx"`
-	BlockRead     float64   `                      json:"block_read"`
-	BlockWrite    float64   `                      json:"block_write"`
+	ID uint `gorm:"primaryKey"                                              json:"id"`
+	// L'index composite sert les requêtes d'historique filtrées par conteneur et fenêtre de temps.
+	ContainerID   string    `gorm:"index;index:idx_container_timestamp,priority:1;not null" json:"container_id"`
+	Timestamp     time.Time `gorm:"index;index:idx_container_timestamp,priority:2;not null" json:"timestamp"`
+	CPUPercent    float64   `                                                               json:"cpu_percent"`
+	MemoryUsage   uint64    `                                                               json:"memory_usage"`
+	MemoryLimit   uint64    `                                                               json:"memory_limit"`
+	MemoryPercent float64   `                                                               json:"memory_percent"`
+	NetworkRx     float64   `                                                               json:"network_rx"`
+	NetworkTx     float64   `                                                               json:"network_tx"`
+	BlockRead     float64   `                                                               json:"block_read"`
+	BlockWrite    float64   `                                                               json:"block_write"`
 }
 
 // SystemStat représente une métrique ponctuelle pour le système hôte (Bare Metal)

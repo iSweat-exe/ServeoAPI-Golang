@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"serveoapi/internal/core/database"
@@ -50,24 +52,62 @@ func ValidateToken(tokenString string) (uint, string, error) {
 		return 0, "", errors.New("invalid or expired JWT token")
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		permissions, _ := claims["permissions"].(string)
-		userIDFloat, _ := claims["sub"].(float64)
-		tokenVersionFloat, _ := claims["token_version"].(float64)
-		userID := uint(userIDFloat)
-
-		// Verify TokenVersion against database
-		var user auth.User
-		if err := database.DB.Select("token_version").First(&user, userID).Error; err != nil {
-			return 0, "", errors.New("user not found")
-		}
-
-		if int(tokenVersionFloat) != user.TokenVersion {
-			return 0, "", errors.New("token has been revoked")
-		}
-
-		return userID, permissions, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, "", errors.New("invalid token payload")
 	}
 
-	return 0, "", errors.New("invalid token payload")
+	userID, ok := claimAsUint(claims["sub"])
+	if !ok || userID == 0 {
+		return 0, "", errors.New("invalid token subject")
+	}
+
+	tokenVersion, ok := claimAsUint(claims["token_version"])
+	if !ok {
+		return 0, "", errors.New("invalid token version")
+	}
+
+	// Verify TokenVersion against database
+	var user auth.User
+	if err := database.DB.Select("token_version, permissions").First(&user, userID).Error; err != nil {
+		return 0, "", errors.New("user not found")
+	}
+
+	if int(tokenVersion) != user.TokenVersion {
+		return 0, "", errors.New("token has been revoked")
+	}
+
+	// Les permissions font foi depuis la DB : un changement de droits s'applique
+	// immédiatement même si le JWT n'a pas encore été réémis.
+	return userID, user.Permissions, nil
+}
+
+// claimAsUint convertit un claim JWT numérique (float64 / json.Number / string)
+// sans perte d'intégrité pour les identifiants entiers.
+func claimAsUint(value interface{}) (uint, bool) {
+	switch v := value.(type) {
+	case float64:
+		if v < 0 || v != math.Trunc(v) {
+			return 0, false
+		}
+		return uint(v), true
+	case int64:
+		if v < 0 {
+			return 0, false
+		}
+		return uint(v), true
+	case int:
+		if v < 0 {
+			return 0, false
+		}
+		return uint(v), true
+	case string:
+		n, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return uint(n), true
+	default:
+		return 0, false
+	}
 }

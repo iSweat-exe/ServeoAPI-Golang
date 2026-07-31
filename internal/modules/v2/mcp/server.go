@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"serveoapi/internal/core/config"
+	"serveoapi/internal/core/contextkeys"
+	"serveoapi/internal/core/middleware"
 
 	"github.com/mark3labs/mcp-go/server"
-
-	"serveoapi/internal/core/contextkeys"
 )
 
 var (
@@ -34,23 +34,16 @@ func GetHandler() http.Handler {
 }
 
 // hasPermission vérifie si le contexte de la requête contient la permission RBAC requise.
+// Le middleware JWT injecte les permissions sous forme de chaîne séparée par des virgules.
 func hasPermission(ctx context.Context, requiredPerm string) error {
-	// Le middleware injecte les permissions dans le contexte
-	// Nous extrayons les permissions du contexte.
-	permissionsObj := ctx.Value(contextkeys.UserPermissionsKey)
-	if permissionsObj == nil {
+	permissions, ok := contextkeys.GetUserPermissions(ctx)
+	if !ok {
 		return errors.New("unauthorized: missing user permissions in context")
 	}
 
-	permissions, ok := permissionsObj.([]string)
-	if !ok {
-		return errors.New("internal server error: permissions type mismatch")
+	if !middleware.HasPermission(permissions, requiredPerm) {
+		return errors.New("forbidden: missing required permission '" + requiredPerm + "'")
 	}
 
-	for _, p := range permissions {
-		if p == requiredPerm || p == "*" {
-			return nil
-		}
-	}
-	return errors.New("forbidden: missing required permission '" + requiredPerm + "'")
+	return nil
 }

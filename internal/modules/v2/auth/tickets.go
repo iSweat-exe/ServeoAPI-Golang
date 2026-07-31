@@ -31,10 +31,14 @@ func init() {
 	}()
 }
 
-// GenerateTicket crée un ticket court (valable 30 secondes) lié à un token JWT
-func GenerateTicket(tokenString string) string {
+// GenerateTicket crée un ticket court (valable 30 secondes) lié à un token JWT.
+// Une erreur est retournée si l'aléa système est indisponible, afin de ne jamais
+// émettre un ticket prévisible.
+func GenerateTicket(tokenString string) (string, error) {
 	bytes := make([]byte, 16) // 32 hex chars
-	_, _ = rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
 	ticket := hex.EncodeToString(bytes)
 
 	ticketStore.Store(ticket, ticketEntry{
@@ -42,7 +46,7 @@ func GenerateTicket(tokenString string) string {
 		ExpiresAt: time.Now().Add(30 * time.Second),
 	})
 
-	return ticket
+	return ticket, nil
 }
 
 // ConsumeTicket vérifie si un ticket existe et n'a pas expiré, puis le supprime (usage unique)

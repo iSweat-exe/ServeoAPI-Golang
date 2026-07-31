@@ -2,6 +2,7 @@ package system
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"runtime"
 	"time"
@@ -21,12 +22,22 @@ type Handler struct {
 	DB *gorm.DB
 }
 
+// logProbeError trace une sonde système indisponible sans interrompre la réponse :
+// les champs concernés restent à zéro.
+func logProbeError(probe string, err error) {
+	if err != nil {
+		slog.Warn("Sonde système indisponible", "probe", probe, "error", err)
+	}
+}
+
 func getSystemStats() SystemResponse {
 	// Mémoire
-	v, _ := mem.VirtualMemory()
+	v, err := mem.VirtualMemory()
+	logProbeError("memory", err)
 
 	// CPU (snapshot non bloquant)
-	c, _ := cpu.Percent(0, false)
+	c, err := cpu.Percent(0, false)
+	logProbeError("cpu", err)
 	cpuUsage := 0.0
 	if len(c) > 0 {
 		cpuUsage = c[0]
@@ -37,7 +48,8 @@ func getSystemStats() SystemResponse {
 	if runtime.GOOS == "windows" {
 		path = "C:\\"
 	}
-	d, _ := disk.Usage(path)
+	d, err := disk.Usage(path)
+	logProbeError("disk", err)
 	var diskTotal, diskUsed uint64
 	if d != nil {
 		diskTotal = d.Total
@@ -45,7 +57,8 @@ func getSystemStats() SystemResponse {
 	}
 
 	// Réseau
-	n, _ := net.IOCounters(false)
+	n, err := net.IOCounters(false)
+	logProbeError("network", err)
 	var tx, rx uint64
 	if len(n) > 0 {
 		tx = n[0].BytesSent
@@ -59,7 +72,8 @@ func getSystemStats() SystemResponse {
 	}
 
 	// Informations de l'hôte
-	h, _ := host.Info()
+	h, err := host.Info()
+	logProbeError("host", err)
 	var platform, kernel, hostname string
 	var uptime uint64
 	if h != nil {
@@ -119,7 +133,11 @@ func (hd *Handler) StreamSystem(w http.ResponseWriter, r *http.Request) {
 			return
 		default:
 			resp := getSystemStats()
-			jsonBytes, _ := json.Marshal(resp)
+			jsonBytes, err := json.Marshal(resp)
+			if err != nil {
+				slog.Error("Sérialisation des métriques système impossible", "error", err)
+				return
+			}
 			stream.SendSSEEvent(w, string(jsonBytes))
 			time.Sleep(1 * time.Second)
 		}

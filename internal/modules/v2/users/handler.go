@@ -148,8 +148,11 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Permissions != nil {
+	if req.Permissions != nil && *req.Permissions != user.Permissions {
 		user.Permissions = *req.Permissions
+		// Les permissions sont portées par le JWT : révoquer les jetons existants
+		// pour que le nouveau périmètre s'applique immédiatement.
+		user.TokenVersion++
 	}
 	if req.ProfilePicture != nil {
 		user.ProfilePicture = *req.ProfilePicture
@@ -158,9 +161,67 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		user.Status = *req.Status
 	}
 
-	h.DB.Save(&user)
+	if err := h.DB.Save(&user).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Could not update user")
+		return
+	}
 
 	response.SendJSON(w, http.StatusOK, mapToResponse(user))
+}
+
+// AdminUpdatePasswordRequest est le corps attendu pour réinitialiser le mot de passe d'un autre utilisateur.
+type AdminUpdatePasswordRequest struct {
+	NewPassword string `json:"new_password" validate:"required,min=8"`
+}
+
+// UpdateUserPassword godoc
+// @Summary      Reset a user's password
+// @Description  Définit le mot de passe d'un autre utilisateur (nécessite users.manage) et révoque ses jetons
+// @Tags         users
+// @Security     ApiKeyAuth
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Param        body body AdminUpdatePasswordRequest true "New password"
+// @Success      204
+// @Failure      400,404,500 {string} string
+// @Router       /v2/users/{id}/password [put]
+func (h *Handler) UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // limite de 1 Mo
+
+	var req AdminUpdatePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, "Invalid body")
+		return
+	}
+
+	if err := validation.Validator.Struct(req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var user auth.User
+	if err := h.DB.First(&user, id).Error; err != nil {
+		response.SendError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	if err := user.HashPassword(req.NewPassword); err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Error hashing password")
+		return
+	}
+
+	// Révoque les jetons émis avec l'ancien mot de passe.
+	user.TokenVersion++
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Could not save new password")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // DeleteUser godoc
@@ -184,6 +245,10 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.DB.Unscoped().Delete(&auth.User{}, id)
+	if err := h.DB.Unscoped().Delete(&auth.User{}, id).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Could not delete user")
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

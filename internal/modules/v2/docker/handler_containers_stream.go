@@ -47,6 +47,9 @@ func (h *Handler) StreamContainerLogs(
 	stream.SetupSSEHeaders(w)
 
 	pr, pw := io.Pipe()
+	// Fermer le lecteur débloque la goroutine de copie si l'on sort de la boucle en premier.
+	defer pr.Close()
+
 	go func() {
 		defer pw.Close()
 		// StdCopy nettoie le multiplex header de 8 bytes de Docker
@@ -56,7 +59,10 @@ func (h *Handler) StreamContainerLogs(
 	scanner := bufio.NewScanner(pr)
 	for scanner.Scan() {
 		// Encode to json string to escape quotes/newlines for SSE data payload safely
-		jsonBytes, _ := json.Marshal(scanner.Text())
+		jsonBytes, err := json.Marshal(scanner.Text())
+		if err != nil {
+			continue
+		}
 		stream.SendSSEEvent(w, string(jsonBytes))
 	}
 	if err := scanner.Err(); err != nil {

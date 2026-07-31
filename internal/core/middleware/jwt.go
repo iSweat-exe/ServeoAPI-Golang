@@ -1,12 +1,11 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
-	"strings"
 
 	"serveoapi/internal/core/contextkeys"
 	"serveoapi/internal/core/response"
+	"serveoapi/internal/modules/v2/auth"
 )
 
 // JWTAuth middleware verifies the JWT token
@@ -15,19 +14,7 @@ func JWTAuth(next http.Handler) http.Handler {
 		w http.ResponseWriter,
 		r *http.Request,
 	) {
-		authHeader := r.Header.Get("Authorization")
-		tokenString := ""
-
-		if authHeader != "" {
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
-				tokenString = strings.TrimSpace(parts[1])
-			} else {
-				// Fallback (ex: pour Swagger)
-				tokenString = strings.TrimSpace(authHeader)
-			}
-		}
-
+		tokenString := auth.BearerToken(r)
 		if tokenString == "" {
 			response.SendError(
 				w,
@@ -43,8 +30,8 @@ func JWTAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), contextkeys.UserPermissionsKey, permissions)
-		ctx = context.WithValue(ctx, contextkeys.UserIDKey, userID)
+		ctx := contextkeys.SetUserPermissions(r.Context(), permissions)
+		ctx = contextkeys.SetUserID(ctx, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

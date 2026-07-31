@@ -30,12 +30,18 @@ import (
 func New(cfg *config.Config, dockerCli *client.Client) http.Handler {
 	mux := http.NewServeMux()
 
-	// Go 1.22+ ServeMux gère automatiquement le trailing slash comme une correspondance de préfixe
-	mux.Handle("GET /swagger/", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	))
-
 	authMiddleware := middleware.JWTAuth
+
+	// Go 1.22+ ServeMux gère automatiquement le trailing slash comme une correspondance de préfixe.
+	// La documentation n'est exposée publiquement qu'en dehors de la production.
+	var swagger http.Handler = httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json"))
+	llmDocs := http.StripPrefix("/LLMs/", http.FileServer(http.Dir("LLMs")))
+	if cfg.IsProduction() {
+		swagger = authMiddleware(swagger)
+		llmDocs = authMiddleware(llmDocs)
+	}
+	mux.Handle("GET /swagger/", swagger)
+	mux.Handle("GET /LLMs/", llmDocs)
 
 	auth.RegisterRoutes(mux, authMiddleware, database.DB)
 
@@ -55,12 +61,11 @@ func New(cfg *config.Config, dockerCli *client.Client) http.Handler {
 	// Métriques Prometheus sécurisées avec JWT auth pour éviter les fuites
 	mux.Handle("GET /prometheus", authMiddleware(promhttp.Handler()))
 
-	mux.Handle("GET /LLMs/", http.StripPrefix("/LLMs/", http.FileServer(http.Dir("LLMs"))))
-
-	handler := middleware.RateLimit(mux)
-	handler = middleware.CORS(handler)
+	handler := middleware.RateLimit(cfg)(mux)
+	handler = middleware.CORS(cfg)(handler)
 	handler = middleware.Metrics(handler)
-	return middleware.Logger(handler)
+	handler = middleware.Logger(handler)
+	return middleware.Recover(handler)
 }
 
 // prometheusDocs est une fonction factice utilisée uniquement pour générer la documentation Swagger de la route /prometheus

@@ -47,17 +47,36 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          UPDATE_PUBLIC_KEY: ${{ secrets.MINISIGN_PUBLIC_KEY }}
         run: |
-          LDFLAGS="-s -w -X serveoapi/internal/core/config.AppVersion=${{ steps.vars.outputs.VERSION }} -X serveoapi/internal/core/config.CommitHash=${{ steps.vars.outputs.COMMIT_HASH }} -X serveoapi/internal/core/config.DefaultAPIToken=${{ secrets.API_TOKEN }}"
+          LDFLAGS="-s -w -X serveoapi/internal/core/config.AppVersion=${{ steps.vars.outputs.VERSION }} -X serveoapi/internal/core/config.CommitHash=${{ steps.vars.outputs.COMMIT_HASH }} -X serveoapi/internal/core/config.UpdatePublicKey=${UPDATE_PUBLIC_KEY}"
           BINARY_NAME="serveoapi_${{ matrix.goos }}_${{ matrix.goarch }}"
-          
+
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="${BINARY_NAME}.exe"
           fi
-          
+
           go build -ldflags "$LDFLAGS" -o $BINARY_NAME ./cmd/api
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+
+      # La commande "update" refuse tout binaire non signé : chaque asset est publié
+      # avec sa signature minisign.
+      - name: Sign Binary
+        env:
+          MINISIGN_PRIVATE_KEY: ${{ secrets.MINISIGN_PRIVATE_KEY }}
+        run: |
+          if [ -z "$MINISIGN_PRIVATE_KEY" ]; then
+            echo "::error::Le secret MINISIGN_PRIVATE_KEY est requis pour signer les binaires de release."
+            exit 1
+          fi
+
+          sudo apt-get update && sudo apt-get install -y minisign
+          echo "$MINISIGN_PRIVATE_KEY" > minisign.key
+          minisign -S -s minisign.key -m "$BINARY_NAME" -x "${BINARY_NAME}.minisig"
+          rm -f minisign.key
 
       - name: Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: serveoapi_*
+          files: |
+            serveoapi_*

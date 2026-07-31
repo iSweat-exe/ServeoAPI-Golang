@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -113,20 +114,26 @@ func validateVolume(
 	parts := strings.SplitN(volStr, ":", 2)
 	src := parts[0]
 
-	if strings.Contains(src, "/") || strings.Contains(src, "\\") || strings.HasPrefix(src, ".") {
-		if strings.HasPrefix(src, ".") {
-			return fmt.Errorf(
-				"Security Error: Relative paths in volumes are forbidden in service '%s'",
-				srvName,
-			)
-		}
-		if !strings.HasPrefix(src, allowedRoot) {
-			return fmt.Errorf(
-				"Security Error: Bind mounts are restricted to %s in service '%s'",
-				allowedRoot,
-				srvName,
-			)
-		}
+	// Volumes nommés Docker (sans séparateur de chemin) : pas des bind mounts.
+	if !strings.ContainsAny(src, `/\`) && !strings.HasPrefix(src, ".") {
+		return nil
+	}
+
+	normalized := path.Clean(filepath.ToSlash(src))
+	if strings.HasPrefix(src, ".") || !path.IsAbs(normalized) {
+		return fmt.Errorf(
+			"Security Error: Relative paths in volumes are forbidden in service '%s'",
+			srvName,
+		)
+	}
+
+	// Même normalisation que CreateContainer : bloque les traversées "../".
+	if !isBindSourceAllowed(src, allowedRoot) {
+		return fmt.Errorf(
+			"Security Error: Bind mounts are restricted to %s in service '%s'",
+			allowedRoot,
+			srvName,
+		)
 	}
 	return nil
 }

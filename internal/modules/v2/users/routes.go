@@ -28,5 +28,6 @@ func RegisterRoutes(
 	registerRoute("POST /v2/users/", h.CreateUser)
 	registerRoute("GET /v2/users/", h.GetUsers)
 	registerRoute("PATCH /v2/users/{id}", h.UpdateUser)
+	registerRoute("PUT /v2/users/{id}/password", h.UpdateUserPassword)
 	registerRoute("DELETE /v2/users/{id}", h.DeleteUser)
 }

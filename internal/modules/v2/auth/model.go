@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"log/slog"
+	"os"
 
 	"serveoapi/internal/core/database"
 
@@ -55,19 +58,54 @@ func MigrateDatabase() error {
 
 	// Création du compte par défaut si la table est vide
 	var count int64
-	database.DB.Model(&User{}).Count(&count)
-	if count == 0 {
-		slog.Info("Aucun utilisateur trouvé. Création de l'utilisateur par défaut 'admin'...")
-		defaultAdmin := User{
-			Username:    "admin",
-			Permissions: "*",
-		}
-		if err := defaultAdmin.HashPassword("root"); err != nil {
+	if err := database.DB.Model(&User{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	slog.Info("Aucun utilisateur trouvé. Création de l'utilisateur par défaut 'admin'...")
+
+	// Le mot de passe provient de l'environnement, sinon il est généré aléatoirement :
+	// aucun identifiant par défaut connu ne doit exister.
+	password, generated := os.LookupEnv("ADMIN_PASSWORD")
+	if !generated || password == "" {
+		password, err = generatePassword()
+		if err != nil {
 			return err
 		}
-		database.DB.Create(&defaultAdmin)
-		slog.Info("Utilisateur 'admin' (password: 'root') créé avec succès.")
+		generated = false
+	}
+
+	defaultAdmin := User{
+		Username:    "admin",
+		Permissions: "*",
+	}
+	if err := defaultAdmin.HashPassword(password); err != nil {
+		return err
+	}
+	if err := database.DB.Create(&defaultAdmin).Error; err != nil {
+		return err
+	}
+
+	if generated {
+		slog.Info("Utilisateur 'admin' créé avec le mot de passe fourni via ADMIN_PASSWORD.")
+	} else {
+		slog.Warn(
+			"Utilisateur 'admin' créé avec un mot de passe généré. Notez-le maintenant, il ne sera plus affiché, et changez-le après la première connexion.",
+			"password", password,
+		)
 	}
 
 	return nil
+}
+
+// generatePassword produit un mot de passe initial aléatoire de 128 bits.
+func generatePassword() (string, error) {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }

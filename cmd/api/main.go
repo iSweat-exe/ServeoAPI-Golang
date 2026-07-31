@@ -55,8 +55,20 @@ func main() {
 
 	cfg := config.Load()
 
+	if auth.IsUsingDefaultSecret() {
+		if cfg.IsProduction() {
+			slog.Error(
+				"JWT_SECRET doit être défini en production : le secret par défaut est public et permettrait de forger des jetons",
+			)
+			os.Exit(1)
+		}
+		slog.Warn(
+			"JWT_SECRET non défini : utilisation du secret de développement. Ne jamais déployer ainsi en production",
+		)
+	}
+
 	// Initialisation de la base de données
-	if err := database.InitDatabase("serveo.db"); err != nil {
+	if err := database.InitDatabase(cfg.SQLitePath); err != nil {
 		slog.Error("Impossible d'initialiser la base de données", "error", err)
 		os.Exit(1)
 	}

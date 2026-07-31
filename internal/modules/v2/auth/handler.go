@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -18,7 +19,17 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-var JwtSecretKey = []byte(getEnvOrDefault("JWT_SECRET", "serveo_super_secret_key_change_me"))
+// defaultJwtSecret n'est utilisé qu'en développement : le démarrage échoue en production
+// si JWT_SECRET n'est pas fourni (voir IsUsingDefaultSecret).
+const defaultJwtSecret = "serveo_super_secret_key_change_me"
+
+var JwtSecretKey = []byte(getEnvOrDefault("JWT_SECRET", defaultJwtSecret))
+
+// IsUsingDefaultSecret indique que la variable JWT_SECRET n'a pas été fournie et que le
+// secret de développement, public, est utilisé pour signer les jetons.
+func IsUsingDefaultSecret() bool {
+	return string(JwtSecretKey) == defaultJwtSecret
+}
 
 func getEnvOrDefault(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
@@ -78,7 +89,15 @@ func (h *Handler) Login(
 	now := time.Now().Unix()
 	user.LastConnection = &now
 	user.Status = "online"
-	h.DB.Save(&user)
+	if err := h.DB.Save(&user).Error; err != nil {
+		slog.Error(
+			"Impossible de mettre à jour l'état de connexion",
+			"error",
+			err,
+			"user_id",
+			user.ID,
+		)
+	}
 
 	// Générer le JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -119,11 +138,18 @@ func (h *Handler) Logout(
 	}
 
 	var user User
-	if err := h.DB.First(&user, userID).Error; err == nil {
-		user.Status = "offline"
-		// Optionnel : invalider le token actuel lors du logout manuel :
-		// user.TokenVersion++
-		h.DB.Save(&user)
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		response.SendError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	user.Status = "offline"
+	// Révoque le jeton utilisé : il ne doit plus être rejouable après déconnexion.
+	user.TokenVersion++
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Could not log out")
+		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -143,20 +169,18 @@ type TicketResponse struct {
 // @Failure      401  {string}  string
 // @Router       /v2/auth/ticket [post]
 func (h *Handler) GetTicket(w http.ResponseWriter, r *http.Request) {
-	authStr := r.Header.Get("Authorization")
-	tokenString := ""
-
-	if len(authStr) > 7 && authStr[:7] == "Bearer " {
-		tokenString = authStr[7:]
-	} else {
-		tokenString = authStr
-	}
-
+	tokenString := BearerToken(r)
 	if tokenString == "" {
 		response.SendError(w, http.StatusUnauthorized, "Missing token")
 		return
 	}
 
-	ticket := GenerateTicket(tokenString)
+	ticket, err := GenerateTicket(tokenString)
+	if err != nil {
+		slog.Error("Impossible de générer un ticket WebSocket", "error", err)
+		response.SendError(w, http.StatusInternalServerError, "Could not generate ticket")
+		return
+	}
+
 	response.SendJSON(w, http.StatusOK, TicketResponse{Ticket: ticket})
 }

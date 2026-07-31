@@ -5,7 +5,29 @@ import (
 	"strings"
 
 	"serveoapi/internal/core/contextkeys"
+	"serveoapi/internal/core/response"
 )
+
+// HasPermission indique si la liste de permissions (séparées par des virgules) couvre
+// la permission demandée. "*" accorde tous les droits et un suffixe ".*" agit comme
+// un joker sur le préfixe (ex: "docker.containers.*").
+func HasPermission(userPermissions, requiredPerm string) bool {
+	for _, p := range strings.Split(userPermissions, ",") {
+		p = strings.TrimSpace(p)
+		if p == "*" || p == requiredPerm {
+			return true
+		}
+
+		if strings.HasSuffix(p, ".*") {
+			prefix := strings.TrimSuffix(p, ".*")
+			if strings.HasPrefix(requiredPerm, prefix+".") {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 
 // RequirePermission checks if the authenticated user has the required permission
 // or if they have the root permission "*".
@@ -14,44 +36,17 @@ func RequirePermission(requiredPerm string, next http.Handler) http.Handler {
 		w http.ResponseWriter,
 		r *http.Request,
 	) {
-		permissionsObj := r.Context().Value(contextkeys.UserPermissionsKey)
-		if permissionsObj == nil {
-			http.Error(w, "Access Denied: No permissions found", http.StatusForbidden)
-			return
-		}
-
-		userPermsStr, ok := permissionsObj.(string)
+		userPermsStr, ok := contextkeys.GetUserPermissions(r.Context())
 		if !ok {
-			http.Error(w, "Access Denied: Invalid permissions format", http.StatusForbidden)
+			response.SendError(w, http.StatusForbidden, "Access Denied: No permissions found")
 			return
 		}
 
-		// Split comma-separated permissions
-		perms := strings.Split(userPermsStr, ",")
-		hasAccess := false
-
-		for _, p := range perms {
-			p = strings.TrimSpace(p)
-			if p == "*" || p == requiredPerm {
-				hasAccess = true
-				break
-			}
-
-			// Optional: support wildcards like "docker.containers.*"
-			if strings.HasSuffix(p, ".*") {
-				prefix := strings.TrimSuffix(p, ".*")
-				if strings.HasPrefix(requiredPerm, prefix+".") {
-					hasAccess = true
-					break
-				}
-			}
-		}
-
-		if !hasAccess {
-			http.Error(
+		if !HasPermission(userPermsStr, requiredPerm) {
+			response.SendError(
 				w,
-				"Access Denied: Missing permission '"+requiredPerm+"'",
 				http.StatusForbidden,
+				"Access Denied: Missing permission '"+requiredPerm+"'",
 			)
 			return
 		}

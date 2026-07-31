@@ -2083,6 +2083,67 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v2/users/{id}/password": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Définit le mot de passe d'un autre utilisateur (nécessite users.manage) et révoque ses jetons",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reset a user's password",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_modules_v2_users.AdminUpdatePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2478,6 +2539,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "container_id": {
+                    "description": "L'index composite sert les requêtes d'historique filtrées par conteneur et fenêtre de temps.",
                     "type": "string"
                 },
                 "cpu_percent": {
@@ -2669,6 +2731,18 @@ const docTemplate = `{
                 "required": {
                     "description": "Est-ce obligatoire ?",
                     "type": "boolean"
+                }
+            }
+        },
+        "internal_modules_v2_users.AdminUpdatePasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
                 }
             }
         },

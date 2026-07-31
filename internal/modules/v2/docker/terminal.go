@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
+	"serveoapi/internal/core/config"
 	"serveoapi/internal/core/middleware"
+	"serveoapi/internal/core/response"
 	"serveoapi/internal/modules/v2/auth"
 
 	"github.com/docker/docker/api/types"
@@ -17,12 +18,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Autoriser toutes les origines pour le panel
-	},
-}
-
 type TerminalControlMessage struct {
 	Type string `json:"type"` // "input" or "resize"
 	Data string `json:"data,omitempty"`
@@ -30,27 +25,26 @@ type TerminalControlMessage struct {
 	Rows uint   `json:"rows,omitempty"`
 }
 
-// checkPermission vérifie les droits depuis le token JWT
+// newUpgrader construit un upgrader qui n'accepte que les origines configurées.
+// Une requête sans en-tête Origin (client non navigateur) reste acceptée : elle
+// est de toute façon authentifiée par un ticket à usage unique.
+func newUpgrader(cfg *config.Config) websocket.Upgrader {
+	return websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			return origin == "" || cfg.IsOriginAllowed(origin)
+		},
+	}
+}
+
+// hasContainerWritePermission vérifie les droits portés par le token du ticket WebSocket.
 func hasContainerWritePermission(tokenString string) bool {
 	_, permissions, err := middleware.ValidateToken(tokenString)
 	if err != nil {
 		return false
 	}
 
-	perms := strings.Split(permissions, ",")
-	for _, p := range perms {
-		p = strings.TrimSpace(p)
-		if p == "*" || p == "docker.containers.write" {
-			return true
-		}
-		if strings.HasSuffix(p, ".*") {
-			prefix := strings.TrimSuffix(p, ".*")
-			if strings.HasPrefix("docker.containers.write", prefix+".") {
-				return true
-			}
-		}
-	}
-	return false
+	return middleware.HasPermission(permissions, "docker.containers.write")
 }
 
 // probeShell vérifie si /bin/bash est exécutable dans le conteneur
@@ -113,24 +107,24 @@ func (h *Handler) TerminalHandler(
 ) {
 	containerID := r.PathValue("id")
 	if containerID == "" {
-		http.Error(w, "Container ID is required", http.StatusBadRequest)
+		response.SendError(w, http.StatusBadRequest, "Container ID is required")
 		return
 	}
 
 	ticket := r.URL.Query().Get("ticket")
 	if ticket == "" {
-		http.Error(w, "Ticket is required", http.StatusUnauthorized)
+		response.SendError(w, http.StatusUnauthorized, "Ticket is required")
 		return
 	}
 
 	tokenString, ok := auth.ConsumeTicket(ticket)
 	if !ok {
-		http.Error(w, "Invalid or expired ticket", http.StatusUnauthorized)
+		response.SendError(w, http.StatusUnauthorized, "Invalid or expired ticket")
 		return
 	}
 
 	if !hasContainerWritePermission(tokenString) {
-		http.Error(w, "Forbidden: Missing docker.containers.write", http.StatusForbidden)
+		response.SendError(w, http.StatusForbidden, "Forbidden: Missing docker.containers.write")
 		return
 	}
 
@@ -141,6 +135,7 @@ func (h *Handler) TerminalHandler(
 
 	cli := h.Service.DockerCli
 
+	upgrader := newUpgrader(h.Service.Config)
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return // Impossible d'écrire une erreur HTTP ici, upgrader s'en charge
@@ -232,6 +227,11 @@ func (h *Handler) TerminalHandler(
 	// Attendre que la première goroutine se termine (soit l'utilisateur a fermé le WS, soit le shell s'est arrêté)
 	err = <-errChan
 
+	// Annule le contexte et ferme les flux pour débloquer immédiatement l'autre goroutine.
+	cancel()
+	_ = ws.SetReadDeadline(time.Now())
+	hijackedResp.Close()
+
 	// Si le shell s'est arrêté proprement (EOF), notifier le client WebSocket avant de fermer
 	if err == nil {
 		_ = ws.WriteControl(
@@ -241,8 +241,7 @@ func (h *Handler) TerminalHandler(
 		)
 	}
 
-	// Les defer ws.Close() et hijackedResp.Close() vont maintenant s'exécuter,
-	// débloquant de force l'autre goroutine et nettoyant toutes les ressources.
+	// Les defer ws.Close() et hijackedResp.Close() (idempotent) nettoyent le reste.
 }
 
 func handleTerminalInput(
@@ -255,6 +254,13 @@ func handleTerminalInput(
 	errChan chan<- error,
 ) {
 	for {
+		select {
+		case <-ctx.Done():
+			errChan <- ctx.Err()
+			return
+		default:
+		}
+
 		msgType, payload, err := ws.ReadMessage()
 		if err != nil {
 			errChan <- err

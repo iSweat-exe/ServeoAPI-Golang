@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"runtime"
+	"sync"
 	"time"
 
 	"serveoapi/internal/core/database"
@@ -15,6 +16,13 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
+)
+
+const (
+	// retentionWindow est la durée de conservation des métriques historisées.
+	retentionWindow = 24 * time.Hour
+	// maxConcurrentStats borne les appels simultanés à l'API Docker durant une collecte.
+	maxConcurrentStats = 8
 )
 
 func StartMetricsWorker(ctx context.Context, interval time.Duration, dockerCli *client.Client) {
@@ -29,15 +37,22 @@ func StartMetricsWorker(ctx context.Context, interval time.Duration, dockerCli *
 				return
 			case <-ticker.C:
 				collectSystemMetrics()
-				collectContainerMetrics(dockerCli)
+				collectContainerMetrics(ctx, dockerCli)
 			}
 		}
 	}()
 }
 
 func collectSystemMetrics() {
-	v, _ := mem.VirtualMemory()
-	c, _ := cpu.Percent(0, false)
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		slog.Warn("Lecture de la mémoire impossible", "error", err)
+	}
+
+	c, err := cpu.Percent(0, false)
+	if err != nil {
+		slog.Warn("Lecture du CPU impossible", "error", err)
+	}
 	cpuUsage := 0.0
 	if len(c) > 0 {
 		cpuUsage = c[0]
@@ -47,9 +62,15 @@ func collectSystemMetrics() {
 	if runtime.GOOS == "windows" {
 		path = "C:\\"
 	}
-	d, _ := disk.Usage(path)
+	d, err := disk.Usage(path)
+	if err != nil {
+		slog.Warn("Lecture du disque impossible", "error", err, "path", path)
+	}
 
-	n, _ := net.IOCounters(false)
+	n, err := net.IOCounters(false)
+	if err != nil {
+		slog.Warn("Lecture du réseau impossible", "error", err)
+	}
 	var tx, rx float64
 	if len(n) > 0 {
 		tx = float64(n[0].BytesSent)
@@ -80,8 +101,16 @@ func collectSystemMetrics() {
 		slog.Error("Failed to save system metrics", "error", err)
 	}
 
-	// Nettoyage des anciens enregistrements (plus de 24h)
-	database.DB.Where("timestamp < ?", time.Now().Add(-24*time.Hour)).Delete(&SystemStat{})
+	purgeOldRecords(&SystemStat{})
+}
+
+// purgeOldRecords supprime les enregistrements de plus de 24h du modèle fourni.
+func purgeOldRecords(model interface{}) {
+	if err := database.DB.
+		Where("timestamp < ?", time.Now().Add(-retentionWindow)).
+		Delete(model).Error; err != nil {
+		slog.Error("Purge des anciennes métriques impossible", "error", err)
+	}
 }
 
 type ContainerStatsData struct {
@@ -117,23 +146,35 @@ type ContainerStatsData struct {
 	} `json:"blkio_stats"`
 }
 
-func collectContainerMetrics(dockerCli *client.Client) {
+func collectContainerMetrics(ctx context.Context, dockerCli *client.Client) {
 	if dockerCli == nil {
 		return
 	}
-	ctx := context.Background()
+
 	containers, err := dockerCli.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		slog.Error("Failed to list containers for metrics", "error", err)
 		return
 	}
 
-	for _, c := range containers {
-		processContainerStats(ctx, dockerCli, c)
-	}
+	// Chaque appel de stats attend Docker : on les parallélise avec une concurrence bornée
+	// pour que la collecte ne dépasse pas l'intervalle du worker.
+	sem := make(chan struct{}, maxConcurrentStats)
+	var wg sync.WaitGroup
 
-	// Nettoyage des anciens enregistrements (plus de 24h)
-	database.DB.Where("timestamp < ?", time.Now().Add(-24*time.Hour)).Delete(&ContainerStat{})
+	for _, c := range containers {
+		wg.Add(1)
+		go func(c container.Summary) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			processContainerStats(ctx, dockerCli, c)
+		}(c)
+	}
+	wg.Wait()
+
+	purgeOldRecords(&ContainerStat{})
 }
 
 func processContainerStats(ctx context.Context, cli *client.Client, c container.Summary) {

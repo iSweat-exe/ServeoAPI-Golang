@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -101,6 +103,19 @@ func (s *DockerService) DeleteContainer(
 	)
 }
 
+// isBindSourceAllowed vérifie que la source d'un bind mount reste sous la racine autorisée
+// une fois le chemin normalisé, afin qu'un segment "../" ne permette pas d'en sortir.
+func isBindSourceAllowed(src, allowedRoot string) bool {
+	normalized := path.Clean(filepath.ToSlash(src))
+	root := path.Clean(filepath.ToSlash(allowedRoot))
+
+	if !path.IsAbs(normalized) {
+		return false
+	}
+
+	return normalized == root || strings.HasPrefix(normalized, root+"/")
+}
+
 func (s *DockerService) CreateContainer(
 	ctx context.Context,
 	req CreateContainerRequest,
@@ -113,12 +128,11 @@ func (s *DockerService) CreateContainer(
 		parts := strings.SplitN(v, ":", 2)
 		src := parts[0]
 
-		if strings.Contains(src, "/") || strings.Contains(src, "\\") {
-			if !strings.HasPrefix(src, allowedRoot) {
-				return ContainerInfo{}, errors.New(
-					"Security Error: Bind mounts are restricted to " + allowedRoot,
-				)
-			}
+		// Les volumes nommés (sans séparateur de chemin) ne sont pas des bind mounts.
+		if strings.ContainsAny(src, `/\`) && !isBindSourceAllowed(src, allowedRoot) {
+			return ContainerInfo{}, errors.New(
+				"Security Error: Bind mounts are restricted to " + allowedRoot,
+			)
 		}
 		hostConfig.Binds = append(hostConfig.Binds, v)
 	}
