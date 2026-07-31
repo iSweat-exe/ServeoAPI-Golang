@@ -274,7 +274,7 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := root.Remove(reqPath); err != nil {
+		if err := root.RemoveAll(reqPath); err != nil {
 			response.SendError(w, http.StatusInternalServerError, "Failed to delete file/folder")
 			return
 		}

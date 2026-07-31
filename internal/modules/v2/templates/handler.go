@@ -351,7 +351,11 @@ func (h *Handler) DeployTemplate(w http.ResponseWriter, r *http.Request) {
 
 	tplStr := string(data)
 
-	// Inject variables using default values if not provided in the request
+	// Inject variables using default values if not provided in the request.
+	// Values are JSON-escaped before substitution since placeholders sit
+	// inside JSON string literals in the template; without escaping, a value
+	// containing '"' or '\' could break out of its string and inject or
+	// overwrite adjacent JSON fields (e.g. image, ports, volumes).
 	for _, v := range partialTpl.Variables {
 		val := v.Default
 		if req.Variables != nil {
@@ -359,12 +363,12 @@ func (h *Handler) DeployTemplate(w http.ResponseWriter, r *http.Request) {
 				val = provided
 			}
 		}
-		tplStr = strings.ReplaceAll(tplStr, "{{"+v.Name+"}}", val)
+		tplStr = strings.ReplaceAll(tplStr, "{{"+v.Name+"}}", jsonStringEscape(val))
 	}
 
 	// Inject random ID
 	randID := generateRandomID(8)
-	tplStr = strings.ReplaceAll(tplStr, "{{id}}", randID)
+	tplStr = strings.ReplaceAll(tplStr, "{{id}}", jsonStringEscape(randID))
 
 	var tplInfo TemplateInfo
 	if err := json.Unmarshal([]byte(tplStr), &tplInfo); err != nil {
@@ -389,6 +393,17 @@ func (h *Handler) DeployTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.SendJSON(w, http.StatusCreated, containerInfo)
+}
+
+// jsonStringEscape escapes val so it can be substituted directly inside a
+// JSON string literal without breaking out of it.
+func jsonStringEscape(val string) string {
+	b, err := json.Marshal(val)
+	if err != nil || len(b) < 2 {
+		return ""
+	}
+	// Strip the surrounding quotes json.Marshal adds for a string value.
+	return string(b[1 : len(b)-1])
 }
 
 func generateRandomID(length int) string {

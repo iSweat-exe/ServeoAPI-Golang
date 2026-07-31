@@ -8,13 +8,18 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
-	"time"
 
 	"serveoapi/internal/core/response"
 
 	"gopkg.in/yaml.v3"
 )
+
+// validStackNameRegex restricts stack names to characters that are safe to
+// use as both a filesystem path component and a `docker compose -p` project
+// name, preventing path traversal in executeDeploy.
+var validStackNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 type DeployStackRequest struct {
 	Name    string `json:"name"`
@@ -44,6 +49,15 @@ func (h *Handler) DeployStack(
 
 	if req.Name == "" || req.Content == "" {
 		response.SendError(w, http.StatusBadRequest, "Name and Content are required")
+		return
+	}
+
+	if !validStackNameRegex.MatchString(req.Name) {
+		response.SendError(
+			w,
+			http.StatusBadRequest,
+			"Invalid stack name: only letters, digits, '_' and '-' are allowed",
+		)
 		return
 	}
 
@@ -144,20 +158,28 @@ func (h *Handler) executeDeploy(
 	r *http.Request,
 	req DeployStackRequest,
 ) {
-	// 2. Écrire le YAML dans un fichier temporaire
-	tmpDir := os.TempDir()
-	fileName := filepath.Join(
-		tmpDir,
-		"serveo_stack_"+req.Name+"_"+time.Now().Format("20060102150405")+".yml",
-	)
+	// 2. Écrire le YAML dans un répertoire dédié, avec un nom de fichier
+	// déterministe basé sur le nom du stack (déjà validé par
+	// validStackNameRegex, donc sans risque de traversée de chemin).
+	stackDir := filepath.Join(os.TempDir(), "serveo-compose")
+	if err := os.MkdirAll(stackDir, 0o755); err != nil {
+		response.SendError(
+			w,
+			http.StatusInternalServerError,
+			"Failed to prepare compose directory",
+		)
+		return
+	}
+	fileName := filepath.Join(stackDir, req.Name+".yml")
 
 	if err := os.WriteFile(fileName, []byte(req.Content), 0o644); err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Failed to write temp compose file")
 		return
 	}
 
-	// Remarque : Nous ne supprimons pas le fichier immédiatement pour permettre un éventuel 'docker compose down' ultérieur,
-	// mais pour cet endpoint nous exécutons juste 'up -d' et laissons l'utilisateur gérer via CLI. Le fichier reste dans /tmp.
+	// Remarque : le fichier n'est pas supprimé immédiatement pour permettre un éventuel 'docker compose down' ultérieur.
+	// Le nom de fichier étant désormais déterministe (un fichier par stack), un redéploiement écrase l'ancien
+	// fichier au lieu d'en accumuler un nouveau à chaque appel.
 
 	// 3. Exécuter `docker compose up -d`
 	cmd := exec.CommandContext(

@@ -2,7 +2,6 @@ package docker
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -28,7 +27,7 @@ func (h *Handler) GetImages(
 ) {
 	cli := h.Service.DockerCli
 
-	images, err := cli.ImageList(context.Background(), image.ListOptions{All: false})
+	images, err := cli.ImageList(r.Context(), image.ListOptions{All: false})
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -115,7 +114,7 @@ func (h *Handler) DeleteImage(
 
 	cli := h.Service.DockerCli
 
-	_, err := cli.ImageRemove(context.Background(), id, image.RemoveOptions{
+	_, err := cli.ImageRemove(r.Context(), id, image.RemoveOptions{
 		Force: force,
 	})
 	if err != nil {

@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -24,7 +23,7 @@ import (
 func (h *Handler) GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 	cli := h.Service.DockerCli
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(r.Context())
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -58,7 +57,7 @@ func (h *Handler) PruneSystem(
 
 	// Le nettoyage complet (images, conteneurs, volumes, réseaux) nécessite des appels séparés dans le SDK
 	// Ceci agit comme un nettoyage basique des conteneurs pour le moment
-	_, err := cli.ContainersPrune(context.Background(), filters.NewArgs())
+	_, err := cli.ContainersPrune(r.Context(), filters.NewArgs())
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return

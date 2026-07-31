@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"path"
 	"path/filepath"
@@ -282,11 +283,32 @@ func (s *DockerService) UpdateContainer(
 		newName,
 	)
 	if err != nil {
-		return ContainerInfo{}, err
+		// The old container is already gone at this point: attempt to recreate
+		// it from its original config rather than leaving the service destroyed.
+		if rollbackErr := s.rollbackContainer(ctx, oldContainer, newName); rollbackErr != nil {
+			return ContainerInfo{}, fmt.Errorf(
+				"update failed: %w (rollback to previous container also failed: %v)",
+				err, rollbackErr,
+			)
+		}
+		return ContainerInfo{}, fmt.Errorf(
+			"update failed, rolled back to previous container: %w", err,
+		)
 	}
 
 	if err := s.DockerCli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return ContainerInfo{}, err
+		// The newly created container won't start: remove it and roll back
+		// to the previous container instead of leaving the service down.
+		_ = s.DockerCli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true})
+		if rollbackErr := s.rollbackContainer(ctx, oldContainer, newName); rollbackErr != nil {
+			return ContainerInfo{}, fmt.Errorf(
+				"update failed to start: %w (rollback to previous container also failed: %v)",
+				err, rollbackErr,
+			)
+		}
+		return ContainerInfo{}, fmt.Errorf(
+			"update failed to start, rolled back to previous container: %w", err,
+		)
 	}
 
 	return ContainerInfo{
@@ -297,6 +319,34 @@ func (s *DockerService) UpdateContainer(
 		Status: "running",
 		Labels: newConfig.Labels,
 	}, nil
+}
+
+// rollbackContainer recreates and starts a container from its original,
+// pre-update configuration. Used when an in-place update fails after the
+// original container has already been removed, so the service isn't left
+// permanently destroyed.
+func (s *DockerService) rollbackContainer(
+	ctx context.Context,
+	oldContainer container.InspectResponse,
+	name string,
+) error {
+	networkConfig := &network.NetworkingConfig{
+		EndpointsConfig: oldContainer.NetworkSettings.Networks,
+	}
+
+	resp, err := s.DockerCli.ContainerCreate(
+		ctx,
+		oldContainer.Config,
+		oldContainer.HostConfig,
+		networkConfig,
+		nil,
+		name,
+	)
+	if err != nil {
+		return err
+	}
+
+	return s.DockerCli.ContainerStart(ctx, resp.ID, container.StartOptions{})
 }
 
 func (s *DockerService) RenameContainer(ctx context.Context, id string, newName string) error {

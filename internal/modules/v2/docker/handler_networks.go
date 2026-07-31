@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -24,7 +23,7 @@ func (h *Handler) GetNetworks(
 ) {
 	cli := h.Service.DockerCli
 
-	networks, err := cli.NetworkList(context.Background(), network.ListOptions{})
+	networks, err := cli.NetworkList(r.Context(), network.ListOptions{})
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -65,7 +64,7 @@ func (h *Handler) DeleteNetwork(
 	id := r.PathValue("id")
 	cli := h.Service.DockerCli
 
-	err := cli.NetworkRemove(context.Background(), id)
+	err := cli.NetworkRemove(r.Context(), id)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return

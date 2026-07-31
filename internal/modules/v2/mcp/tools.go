@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sync"
 	"time"
 
@@ -25,6 +26,11 @@ var (
 	dockerClient  *client.Client
 	ovhClient     *ovh.Client
 )
+
+// validContainerNameRegex mirrors the validation used by the HTTP files
+// handler (internal/modules/v2/files/handler.go) so that this MCP tool
+// cannot be used to escape the allowed mount root via path traversal.
+var validContainerNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func loadCooldowns() {
 	cooldownMutex.Lock()
@@ -149,6 +155,20 @@ func registerFileReadTool(cfg *config.Config) {
 		containerName, _ := args["container_name"].(string)
 		reqPath, _ := args["file_path"].(string)
 
+		if !validContainerNameRegex.MatchString(containerName) {
+			return mcp.NewToolResultError("Invalid container name format"), nil
+		}
+
+		if dockerClient == nil {
+			return mcp.NewToolResultError("Docker client unavailable"), nil
+		}
+
+		// Verify the container actually exists before trusting its name as a
+		// path component, matching the HTTP files handler's safeguards.
+		if _, err := dockerClient.ContainerInspect(ctx, containerName); err != nil {
+			return mcp.NewToolResultError("Container not found or inaccessible"), nil
+		}
+
 		rootPath := filepath.Join(cfg.AllowedMountRoot, containerName)
 
 		root, err := os.OpenRoot(rootPath)
@@ -156,6 +176,18 @@ func registerFileReadTool(cfg *config.Config) {
 			return mcp.NewToolResultError("Cannot open root directory safely"), nil
 		}
 		defer root.Close()
+
+		// Normalize the requested path the same way resolveSafeRoot does:
+		// strip any leading slashes so os.Root treats it as relative to the
+		// container root instead of rejecting or misinterpreting it.
+		reqPath = filepath.Clean(reqPath)
+		reqPath = filepath.ToSlash(reqPath)
+		for len(reqPath) > 0 && reqPath[0] == '/' {
+			reqPath = reqPath[1:]
+		}
+		if reqPath == "" {
+			reqPath = "."
+		}
 
 		f, err := root.OpenFile(reqPath, os.O_RDONLY, 0)
 		if err != nil {

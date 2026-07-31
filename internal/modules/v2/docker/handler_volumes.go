@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -24,7 +23,7 @@ func (h *Handler) GetVolumes(
 ) {
 	cli := h.Service.DockerCli
 
-	volumes, err := cli.VolumeList(context.Background(), volume.ListOptions{})
+	volumes, err := cli.VolumeList(r.Context(), volume.ListOptions{})
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -64,7 +63,7 @@ func (h *Handler) DeleteVolume(
 
 	cli := h.Service.DockerCli
 
-	err := cli.VolumeRemove(context.Background(), name, force)
+	err := cli.VolumeRemove(r.Context(), name, force)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
